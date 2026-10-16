@@ -1238,12 +1238,14 @@ const wallGrp = new THREE.Group();
   for(let i=i0;i<i1-1;i++){
     const side = (egY[i] > fgY[i]) ? 1 : -1;      // wall retains the high (cut) side
     const hH = Math.max(4, S[i].cut*1.0);          // wall height ~ retained depth
-    const g = new THREE.BoxGeometry(1, hH, 3);
+    const a = world[i], b = world[i+1];
+    const segLen = Math.max(6, Math.hypot(b.x-a.x, b.y-a.y));
+    const g = new THREE.BoxGeometry(segLen, hH, 3);
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffb86b, roughness:.55}));
-    const pr = perp[i], w = world[i], off = side*13.5;
-    m.position.set(w.x+pr.x*off, (S[i].fg + hH/2)*VSCALE-2220*VSCALE, w.y+pr.y*off);
-    m.scale.x = Math.max(6, Math.hypot(world[i+1].x-w.x, world[i+1].y-w.y));
-    m.lookAt(new THREE.Vector3(world[i+1].x, m.position.y, world[i+1].y));
+    const pr = perp[i], off = side*13.5;
+    const mx = (a.x+b.x)/2 + pr.x*off, mz = (a.y+b.y)/2 + pr.y*off;
+    m.position.set(mx, (S[i].fg + hH/2)*VSCALE-2220*VSCALE, mz);
+    m.rotation.y = -Math.atan2(b.y-a.y, b.x-a.x);  // align local X with path direction
     wallGrp.add(m);
   }
 }
@@ -1357,6 +1359,7 @@ function tick(now){
 applyPhase(0,1);
 requestAnimationFrame(tick);
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+window.__viz = {wallGrp, lotsGrp, utilGrp, cdsGrp, terrain, road, gotoPhase, applyPhase, S, world, perp, egY, fgY};
 </script>
 <footer style="position:fixed;bottom:6px;left:50%;transform:translateX(-50%);color:#5b6274;font-size:10.5px;z-index:5">IVR Excavation · Earthwork Visualizer pilot · profile data from audited takeoff package · for client presentation</footer>
 </body>
