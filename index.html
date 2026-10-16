@@ -1187,12 +1187,14 @@ const cutCol = new THREE.Color(0xff6b6b), fillCol = new THREE.Color(0x4aa3ff), e
 function placeVertices(morph){ // morph 0..1 EG->final
   let k=0;
   for(let j=0;j<LATN;j++){
-    const o = -LAT + (2*LAT)*(j/(LATN-1));
+    const oRaw = -LAT + (2*LAT)*(j/(LATN-1));
     for(let i=0;i<N;i++,k++){
+      const tw = Math.min(1, Math.min(i, N-1-i)*20/140); // 140-ft taper at each end
+      const o = oRaw*tw;
       const p = world[i], pr = perp[i];
       const x = p.x + pr.x*o, z = p.y + pr.y*o;
       const eg = egY[i] + Math.abs(o)*0.008*Math.sin(i*0.35+o*0.02); // gentle existing crossfall
-      const fin = crossFinal(i,o);
+      const fin = (tw<0.02)? eg : crossFinal(i,o);
       const y = (eg*(1-morph) + fin*morph);
       pos.setXYZ(k, x, y*VSCALE - 2220*VSCALE, z);
       // color by cut/fill delta
@@ -1234,12 +1236,13 @@ const wallGrp = new THREE.Group();
 {
   const i0 = S.findIndex(c=>c.s>=1912), i1 = S.findIndex(c=>c.s>=2058);
   for(let i=i0;i<i1-1;i++){
-    const h = Math.max(2, S[i].fill + 6);
-    const g = new THREE.BoxGeometry(1, h, 4);
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffb86b, roughness:.6, transparent:true, opacity:.9}));
-    const pr = perp[i], w = world[i];
-    m.position.set(w.x+pr.x*16, (S[i].fg + h/2)*VSCALE-2220*VSCALE, w.y+pr.y*16);
-    m.scale.x = Math.hypot(world[i+1].x-w.x, world[i+1].y-w.y);
+    const side = (egY[i] > fgY[i]) ? 1 : -1;      // wall retains the high (cut) side
+    const hH = Math.max(4, S[i].cut*1.0);          // wall height ~ retained depth
+    const g = new THREE.BoxGeometry(1, hH, 3);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffb86b, roughness:.55}));
+    const pr = perp[i], w = world[i], off = side*13.5;
+    m.position.set(w.x+pr.x*off, (S[i].fg + hH/2)*VSCALE-2220*VSCALE, w.y+pr.y*off);
+    m.scale.x = Math.max(6, Math.hypot(world[i+1].x-w.x, world[i+1].y-w.y));
     m.lookAt(new THREE.Vector3(world[i+1].x, m.position.y, world[i+1].y));
     wallGrp.add(m);
   }
