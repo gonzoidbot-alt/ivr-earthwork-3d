@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IVR · Diamond Heights — Earthwork Visualizer (Design Model)</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{background:#0b0d12;color:#e8eaf0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+  .hdr{position:fixed;top:0;left:0;right:0;padding:14px 20px;background:linear-gradient(180deg,rgba(11,13,18,.92),rgba(11,13,18,0));pointer-events:none;z-index:10}
+  .hdr h1{font-size:18px;letter-spacing:.3px}
+  .hdr h1 b{color:#ffb86b}
+  .hdr p{color:#8b93a7;font-size:12.5px;margin-top:2px}
+  .hdr .chip{display:inline-block;background:#141821;border:1px solid #232a38;border-radius:6px;padding:1px 8px;font-size:11px;color:#8b93a7;margin-right:6px}
+  .panel{position:fixed;left:20px;bottom:20px;width:330px;max-width:calc(100vw - 40px);background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:16px 18px;z-index:10;backdrop-filter:blur(6px)}
+  .phase-title{display:flex;align-items:baseline;gap:10px}
+  .phase-title .n{font-size:26px;font-weight:800;color:#ffb86b}
+  .phase-title h2{font-size:16px}
+  .phase-detail{color:#8b93a7;font-size:12.5px;margin-top:4px;min-height:34px}
+  .qty{display:inline-block;margin-top:8px;background:rgba(255,184,107,.1);border:1px solid rgba(255,184,107,.35);color:#ffb86b;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;letter-spacing:.3px}
+  .track{margin-top:14px;height:8px;background:#1a1f2b;border-radius:6px;position:relative;cursor:pointer}
+  .track .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#ffb86b,#3ddc97)}
+  .phases{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+  .phases button{flex:1;min-width:44px;background:#1a1f2b;border:1px solid #232a38;color:#8b93a7;border-radius:8px;padding:6px 2px;font-size:10.5px;cursor:pointer}
+  .phases button.on{background:rgba(255,184,107,.15);border-color:#ffb86b;color:#ffb86b}
+  .phases button.done{color:#3ddc97;border-color:rgba(61,220,151,.4)}
+  .play{margin-top:12px;width:100%;background:#ffb86b;color:#141821;border:none;border-radius:9px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.4px}
+  .legend{position:fixed;right:20px;top:70px;background:rgba(20,24,33,.9);border:1px solid #232a38;border-radius:12px;padding:12px 14px;z-index:10;font-size:12px}
+  .legend div{display:flex;align-items:center;gap:8px;margin:5px 0;color:#c8cddc}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .stamp{position:fixed;right:20px;bottom:20px;width:250px;background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:14px 16px;z-index:10}
+  .stamp h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#8b93a7;margin-bottom:8px}
+  .stamp .row{display:flex;justify-content:space-between;font-size:13px;margin:4px 0}
+  .stamp .row b{color:#3ddc97}
+  .flags{position:fixed;left:20px;top:70px;max-width:330px;font-size:10.5px;color:#5b6274;line-height:1.5;z-index:5;pointer-events:none}
+  footer{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);color:#5b6274;font-size:10.5px;z-index:5;pointer-events:none}
+  @media (max-width:720px){ .legend{display:none} .flags{display:none} .stamp{display:none} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<header class="hdr">
+  <h1><b>IVR</b> · Diamond Heights Subdivision — Earthwork Visualizer</h1>
+  <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">Built from the Werx design model</span></p>
+</header>
+<div class="flags">
+  DATA NOTES — Alignment, pavement edge, contours, ditches, wall and tank pad from the Werx design-model export (exact). EG surface interpolated from existing-ground contours. C-6/C-7 overlap conflict carried per cutfill package. Quantities stamped = audited MC p50 values, NOT recomputed from this surface.
+</div>
+<div class="legend">
+  <div><span class="sw" style="background:#6d5b42"></span>Existing ground</div>
+  <div><span class="sw" style="background:#565d6b"></span>Roadway (design)</div>
+  <div><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
+  <div><span class="sw" style="background:#3ddc97"></span>Ditches / drainage</div>
+  <div><span class="sw" style="background:#c9a961"></span>Design contours</div>
+</div>
+<div class="panel">
+  <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear & Grub</h2></div>
+  <div class="phase-detail" id="ph-detail"></div>
+  <div><span class="qty" id="ph-qty"></span></div>
+  <div class="track" id="track"><div class="fill" id="trackfill" style="width:0%"></div></div>
+  <div class="phases" id="phasebtns"></div>
+  <button class="play" id="play">▶ PLAY INSTALL SEQUENCE</button>
+</div>
+<div class="stamp">
+  <h3>Earthwork summary (audited p50)</h3>
+  <div class="row"><span>Cut</span><b>12,805 CY</b></div>
+  <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
+  <div class="row"><span>Net export</span><b>11,201 CY</b></div>
+  <div class="row"><span>Road</span><b>2,114 LF</b></div>
+  <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
+  <div class="row"><span>Wall</span><b>19.13' max</b></div>
+</div>
+<footer>IVR Excavation · geometry from the Werx design model (exact) · quantities from audited takeoff package · for client presentation</footer>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const DATA = __DATA__;
+const PH = DATA.phases;
+const VSCALE = 2.2, ZBASE = 2220;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d12);
+scene.fog = new THREE.Fog(0x0b0d12, 2200, 4800);
+
+// ---------- data prep ----------
+const ST = DATA.stations;                      // {s,eg,fg,x,y} — design centerline, real plan coords
+const N = ST.length;
+const spine = DATA.spine;                      // dense centerline [x,y,z]
+const ring  = DATA.pavement_ring;              // closed pavement outline [x,y,z]
+const egRings = DATA.eg_rings;                 // existing-ground contours {z, pts}
+// EG sample points
+const egPts = [];
+for (const r of egRings) for (const p of r.pts) egPts.push([p[0], p[1], r.z]);
+const egArr = new Float32Array(egPts.flat());
+const egN = egPts.length;
+function egIDW(px, py, k=10){
+  let best = [];
+  const d = new Float32Array(egN);
+  for (let i=0;i<egN;i++){
+    d[i] = Math.hypot(egArr[i*3]-px, egArr[i*3+1]-py);
+  }
+  const idx = Array.from(egN? d.keys():[]).sort((a,b)=>d[a]-d[b]).slice(0,k);
+  let ws = 0, zs = 0;
+  for (const i of idx){ const w = 1/Math.max(d[i],8); ws+=w; zs+=egPts[i][2]*w; }
+  return zs/ws;
+}
+// design z near the corridor: IDW over pavement ring + spine points
+const dzPts = [];
+for (const p of ring) if (p[2]!=null) dzPts.push([p[0],p[1],p[2]]);
+for (const p of spine) dzPts.push([p[0],p[1],p[2]]);
+const dzArr = new Float32Array(dzPts.flat());
+function dzIDW(px, py, k=8){
+  const d = new Float32Array(dzPts.length);
+  for (let i=0;i<dzPts.length;i++) d[i] = Math.hypot(dzArr[i*3]-px, dzArr[i*3+1]-py);
+  const idx = Array.from(d.keys()).sort((a,b)=>d[a]-d[b]).slice(0,k);
+  let ws=0, zs=0;
+  for (const i of idx){ const w = 1/Math.max(d[i],4); ws+=w; zs+=dzPts[i][2]*w; }
+  return zs/ws;
+}
+// point-in-pavement-ring test (ray cast on XZ)
+const ringXY = ring.map(p=>[p[0],p[1]]);
+function inRing(px, py){
+  let inside = false;
+  for (let i=0, j=ringXY.length-1; i<ringXY.length; j=i++){
+    const xi=ringXY[i][0], yi=ringXY[i][1], xj=ringXY[j][0], yj=ringXY[j][1];
+    if (((yi>py)!==(yj>py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi)) inside = !inside;
+  }
+  return inside;
+}
+
+// world bounds
+let minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9;
+for (const c of ST){ minX=Math.min(minX,c.x); maxX=Math.max(maxX,c.x); minZ=Math.min(minZ,c.y); maxZ=Math.max(maxZ,c.y); }
+for (const p of ring){ minX=Math.min(minX,p[0]); maxX=Math.max(maxX,p[0]); minZ=Math.min(minZ,p[1]); maxZ=Math.max(maxZ,p[1]); }
+const cx=(minX+maxX)/2, cz=(minZ+maxZ)/2;
+const span = Math.max(maxX-minX, maxZ-minZ);
+const WX = v => v-cx, WZ = v => v-cz;   // center the model at origin
+
+// ---------- renderer ----------
+const camera = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, 2, 15000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.getElementById('app').appendChild(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .06;
+controls.maxPolarAngle = Math.PI*0.495; controls.minDistance=80; controls.maxDistance=3200;
+function fitCam(){
+  const dist = span*1.05;
+  camera.position.set(WX(cx)-dist*0.55, (span*0.42), WZ(cz)+dist*0.8);
+  controls.target.set(WX(cx), 30, WZ(cz));
+  controls.update();
+}
+fitCam();
+scene.add(new THREE.HemisphereLight(0xa8c0e0, 0x2a2016, 1.15));
+const sun = new THREE.DirectionalLight(0xffe8c8, 2.3);
+sun.position.set(-600, 900, 500); sun.castShadow = true;
+sun.shadow.camera.left=-1600; sun.shadow.camera.right=1600; sun.shadow.camera.top=1600; sun.shadow.camera.bottom=-1600;
+sun.shadow.camera.far = 5000; sun.shadow.mapSize.set(2048,2048);
+scene.add(sun);
+const fillL = new THREE.DirectionalLight(0x88a0c8, .5); fillL.position.set(600,300,-800); scene.add(fillL);
+
+// ---------- EG terrain surface (morphs to design) ----------
+// grid over bounds; z = EG (IDW) morphing toward design (road corridor IDW inside ring influence)
+const GN = 150, GL = 60; // lateral/longitudinal resolution
+const gx0 = minX-60, gx1 = maxX+60, gz0 = minZ-60, gz1 = maxZ+60;
+const gW = gx1-gx0, gH = gz1-gz0;
+const terrainGeo = new THREE.PlaneGeometry(gW, gH, GN, Math.max(20, Math.round(GN*gH/gW)));
+{
+  const p = terrainGeo.attributes.position;
+  // PlaneGeometry is XY; rotate to XZ by mapping: x -> x, plane-y -> -z
+  for (let i=0;i<p.count;i++){
+    const lx = p.getX(i), ly = p.getY(i);
+    p.setX(i, lx + WX(gx0+gW/2));
+    p.setZ(i, -(ly) + WZ(gz0+gH/2));
+    p.setY(i, 0);
+  }
+}
+const egZ = new Float32Array(terrainGeo.attributes.position.count);
+const dzZ = new Float32Array(terrainGeo.attributes.position.count);
+const colors = new Float32Array(terrainGeo.attributes.position.count*3);
+function placeTerrain(morph){
+  const p = terrainGeo.attributes.position;
+  for (let i=0;i<p.count;i++){
+    const px = p.getX(i)+cx, pz = p.getZ(i)+cz;   // world coords (we stored centered)
+    if (egZ[i]===0 || initPass){
+      egZ[i] = egIDW(px, pz);
+    }
+    // design z: inside ring or near spine -> design; else EG
+    if (initPass || dzZ[i]===0){
+      dzZ[i] = inRing(px,pz) ? dzIDW(px,pz) : Math.max(dzIDW(px,pz), egZ[i]);
+      if (!inRing(px,pz)) dzZ[i] = egZ[i];        // outside corridor: design = existing (slopes handled by ring edge)
+    }
+    const y = (egZ[i]*(1-morph) + dzZ[i]*morph - ZBASE)*VSCALE;
+    p.setY(i, y);
+    const t = Math.min(1, Math.max(0,(morph)));
+    const g = 0.42 + 0.1*Math.sin(px*0.01)*Math.cos(pz*0.013);
+    colors[i*3] = 0.43*(1-t*0.15)+t*0.06; colors[i*3+1]=g*(1-t*0.2)+t*0.14; colors[i*3+2]=0.28*(1-t*0.1)+t*0.13;
+  }
+  terrainGeo.attributes.color.needsUpdate = true;
+  terrainGeo.computeVertexNormals();
+}
+terrainGeo.setAttribute('color', new THREE.BufferAttribute(colors,3));
+let initPass = true;
+placeTerrain(0); initPass = false;
+const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:.92}));
+terrain.receiveShadow = true;
+scene.add(terrain);
+
+// ---------- design road surface (pavement ring) ----------
+const roadGrp = new THREE.Group();
+{
+  // triangulate the ring via THREE.Shape (XZ plane) and set per-vertex z from dzIDW
+  const shape = new THREE.Shape(ringXY.map(([x,y]) => new THREE.Vector2(WX(x), WZ(y))));
+  const g = new THREE.ShapeGeometry(shape);
+  const pos = g.attributes.position;
+  const cols = new Float32Array(pos.count*3);
+  for (let i=0;i<pos.count;i++){
+    const wx = pos.getX(i)+cx, wz = pos.getY(i)+cz;
+    const z = dzIDW(wx, wz);
+    pos.setZ(i, (z-ZBASE)*VSCALE + 0.6);
+    cols[i*3]=0.33; cols[i*3+1]=0.34; cols[i*3+2]=0.37;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(cols,3));
+  g.computeVertexNormals();
+  const road = new THREE.Mesh(g, new THREE.MeshStandardMaterial({vertexColors:true, roughness:.85, side:THREE.DoubleSide, transparent:true, opacity:0}));
+  road.castShadow = true;
+  roadGrp.add(road);
+}
+roadGrp.visible = false; scene.add(roadGrp);
+const roadMesh = roadGrp.children[0];
+
+// ---------- retaining wall ----------
+const wallGrp = new THREE.Group();
+{
+  const wd = DATA.wall_daylight;   // closed-ish polygon band with z
+  // build wall as vertical ribbon: pair consecutive points, box between
+  for (let i=0;i<wd.length-1;i++){
+    const a = wd[i], b = wd[i+1];
+    const len = Math.hypot(b[0]-a[0], b[1]-a[1]);
+    if (len < 2 || len > 60) continue;
+    const topZ = Math.max(a[2], b[2]);
+    const botZ = Math.min(a[2], b[2]);
+    const hH = Math.max(2, (topZ-botZ));
+    const g = new THREE.BoxGeometry(len, hH, 3);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffa63e, roughness:.45, emissive:0xff7a00, emissiveIntensity:.35}));
+    m.position.set(WX((a[0]+b[0])/2), ((topZ+botZ)/2-ZBASE)*VSCALE, WZ((a[1]+b[1])/2));
+    m.rotation.y = -Math.atan2(b[1]-a[1], b[0]-a[0]);
+    wallGrp.add(m);
+  }
+}
+wallGrp.visible = false; scene.add(wallGrp);
+
+// ---------- ditches ----------
+const ditchGrp = new THREE.Group();
+{
+  const mkLine = (pts, color, lift=1.2) => {
+    const v = [];
+    for (const p of pts) v.push(new THREE.Vector3(WX(p[0]), (p[2]-ZBASE)*VSCALE+lift, WZ(p[1])));
+    const g = new THREE.BufferGeometry().setFromPoints(v);
+    return new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:true, opacity:.9}));
+  };
+  ditchGrp.add(mkLine(DATA.ditch_flowline, 0x3ddc97));
+  ditchGrp.add(mkLine(DATA.ditch_edge, 0x2bb88a));
+}
+ditchGrp.visible = false; scene.add(ditchGrp);
+
+// ---------- design contours (decorative, from eg_rings? no — show design surface contours skip) ----------
+
+// ---------- tank pad ----------
+const tankGrp = new THREE.Group();
+{
+  const t = DATA.tank_pad;
+  if (t.length > 2){
+    const shape = new THREE.Shape(t.map(p => new THREE.Vector2(WX(p[0]), WZ(p[1]))));
+    const g = new THREE.ShapeGeometry(shape);
+    const pos = g.attributes.position;
+    for (let i=0;i<pos.count;i++){
+      const wx = pos.getX(i)+cx, wz = pos.getY(i)+cz;
+      pos.setZ(i, (dzIDW(wx,wz)-ZBASE)*VSCALE+0.5);
+    }
+    g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0x8a7a5a, roughness:1, transparent:true, opacity:0}));
+    tankGrp.add(m);
+  }
+}
+tankGrp.visible = false; scene.add(tankGrp);
+
+// ---------- phase engine ----------
+let phaseIdx = 0, phaseT = 1, playing = false;
+function applyPhase(idx, t){
+  const morph = Math.min(1, Math.max(0,
+    idx < 1 ? 0 : idx === 1 ? t*0.9 : 0.9 + (idx===2? t*0.1 : 0)));
+  placeTerrain(Math.min(1, morph));
+  roadGrp.visible = idx >= 4;
+  if (idx >= 4) roadMesh.material.opacity = idx===4 ? t*0.5 : Math.min(1, 0.5+t);
+  wallGrp.visible = idx >= 2;
+  ditchGrp.visible = idx >= 3;
+  tankGrp.visible = idx >= 2;
+  if (idx >= 2) tankGrp.children.forEach(m => m.material.opacity = idx===2? t*0.4 : 0.85);
+  const ph = PH[idx];
+  document.getElementById('ph-n').textContent = ph.id;
+  document.getElementById('ph-name').textContent = ph.name;
+  document.getElementById('ph-detail').textContent = ph.detail;
+  document.getElementById('ph-qty').textContent = ph.qty;
+  document.getElementById('trackfill').style.width = (ph.progress_to*100).toFixed(0)+'%';
+  document.querySelectorAll('#phasebtns button').forEach((b,i)=>{
+    b.classList.toggle('on', i===idx); b.classList.toggle('done', i<idx);
+  });
+}
+function gotoPhase(i, t=1){ phaseIdx = Math.max(0, Math.min(PH.length-1, i)); phaseT = t; applyPhase(phaseIdx, phaseT); }
+const btns = document.getElementById('phasebtns');
+PH.forEach((ph,i)=>{
+  const b=document.createElement('button'); b.textContent=ph.name.split(' ')[0]; b.onclick=()=>gotoPhase(i,1);
+  btns.appendChild(b);
+});
+const track = document.getElementById('track');
+track.addEventListener('click', e=>{
+  const r = track.getBoundingClientRect();
+  gotoPhase(phaseIdx, (e.clientX-r.left)/r.width);
+});
+document.getElementById('play').onclick = ()=>{
+  if (playing){ playing=false; document.getElementById('play').textContent='▶ PLAY INSTALL SEQUENCE'; return; }
+  playing=true; gotoPhase(0,0.01);
+  document.getElementById('play').textContent='⏸ PLAYING…';
+};
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(0.1,(now-last)/1000); last = now;
+  if (playing){
+    phaseT += dt*0.35;
+    if (phaseT>=1){ phaseT=0; phaseIdx++; if (phaseIdx>=PH.length){ phaseIdx=PH.length-1; phaseT=1; playing=false; document.getElementById('play').textContent='▶ REPLAY SEQUENCE'; } }
+    applyPhase(phaseIdx, Math.min(1,phaseT));
+  }
+  controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(tick);
+}
+applyPhase(0,1);
+requestAnimationFrame(tick);
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+
+window.__viz = {terrain, roadGrp, wallGrp, ditchGrp, tankGrp, gotoPhase, applyPhase, ST, scene, camera, controls};
+</script>
+</body>
+</html>
