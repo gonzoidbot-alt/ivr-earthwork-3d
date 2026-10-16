@@ -1191,7 +1191,7 @@ function placeVertices(morph){ // morph 0..1 EG->final
     for(let i=0;i<N;i++,k++){
       const p = world[i], pr = perp[i];
       const x = p.x + pr.x*o, z = p.y + pr.y*o;
-      const eg = egY[i] + Math.abs(o)*0.02*Math.sin(i*0.7+o*0.05); // gentle existing crossfall
+      const eg = egY[i] + Math.abs(o)*0.008*Math.sin(i*0.35+o*0.02); // gentle existing crossfall
       const fin = crossFinal(i,o);
       const y = (eg*(1-morph) + fin*morph);
       pos.setXYZ(k, x, y*VSCALE - 2220*VSCALE, z);
