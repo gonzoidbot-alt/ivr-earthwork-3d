@@ -48,12 +48,11 @@
   <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">STA 8+00 → 29+14</span></p>
 </header>
 <div class="flags">
-  PILOT DATA NOTES — Horizontal alignment schematic (profile data exact). C-6/C-7 overlap conflict carried per cutfill package. Cul-de-sac FG not printed (estimated). Quantities stamped = audited MC p50 values, not recomputed from this surface.
+  PILOT DATA NOTES — Horizontal alignment schematic (profile data exact). C-6/C-7 overlap conflict carried per cutfill package. Cul-de-sac FG not printed (estimated). Quantities stamped = audited MC p50 values, not recomputed from this surface. Cut/fill heat map withheld: C-5 EG/FG vision reads conflict (~35 ft at 16+20); reconciling against printed sheets before enabling.
 </div>
 <div class="legend">
   <div><span class="sw" style="background:#7a5c48"></span>Existing ground</div>
-  <div><span class="sw" style="background:#ff6b6b"></span>Cut (remove)</div>
-  <div><span class="sw" style="background:#4aa3ff"></span>Fill (place)</div>
+  <div><span class="sw" style="background:#4a4f5a"></span>Cut/fill heat map — pending reconciled profiles</div>
   <div><span class="sw" style="background:#565d6b"></span>Roadway</div>
   <div><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
   <div><span class="sw" style="background:#3ddc97"></span>Utilities</div>
@@ -1177,15 +1176,12 @@ function placeVertices(morph){ // morph 0..1 EG->final
       const y = (eg*(1-morph) + fin*morph);
       pos.setXYZ(k, x, y*VSCALE - 2220*VSCALE, z);
       // color by cut/fill delta
-      const d = fin - eg; // >0 fill, <0 cut
-      const cut = Math.max(0,-d), fill = Math.max(0,d);
+      // Neutral earth rendering — profile reads conflict (C-5 glm vs qwen); heat-map
+      // cut/fill shading would imply surface accuracy the data can't support.
+      // Quantities are stamped from the audited package instead.
       const base = earthCol.clone().lerp(grassCol, Math.min(1,Math.abs(o)/LAT*1.4));
       const col = base.clone();
-      if (S[i].nodata) { col.lerp(new THREE.Color(0x4a4f5a), 0.55); } // EG not read — neutral, no cut/fill implied
-      else {
-        if (cut>0.4) col.lerp(cutCol, Math.min(1,cut/6)*morph);
-        if (fill>0.4) col.lerp(fillCol, Math.min(1,fill/6)*morph);
-      }
+      if (S[i].nodata) col.lerp(new THREE.Color(0x4a4f5a), 0.5); // EG not read beyond 22+00
       colors[k*3]=col.r; colors[k*3+1]=col.g; colors[k*3+2]=col.b;
     }
   }
