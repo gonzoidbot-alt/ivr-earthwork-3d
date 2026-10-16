@@ -1163,14 +1163,22 @@ const egY = S.map(c=>c.eg), fgY = S.map(c=>c.fg);
 // ---- terrain surface (morphs EG -> corridor final grade) ----
 function crossFinal(i, o){ // final corridor surface at lateral offset o
   const aw = Math.abs(o);
-  const fg = fgY[i];
+  const fg = fgY[i], eg = egY[i];
   if (aw <= 11) return fg;                       // 22' road top
-  const slope = o>0 ? (S[i].fill>0.05 ? DATA.fill_slope : DATA.cut_slope) : DATA.cut_slope;
-  const rise = (aw-11)/slope;
-  const blendStart = 38, blendEnd = 68;
-  if (aw <= blendStart) return fg - rise;        // slope zone
-  const t = Math.min(1,(aw-blendStart)/(blendEnd-blendStart));
-  return (fg - rise)*(1-t) + egY[i]*t;           // blend to existing
+  const rise = (aw-11)/DATA.cut_slope;           // 1.5:1 cut, 2:1 on fill side handled below
+  const cutSide = eg > fg;                       // EG above FG => we cut into the hill
+  let v;
+  if (cutSide){                                  // slope rises from road edge until it daylights at EG
+    const r = (aw-11)/(cutSide? DATA.cut_slope : DATA.cut_slope);
+    v = Math.min(fg + r, eg);
+  } else {                                       // fill: slope descends from road edge down to EG
+    const r = (aw-11)/DATA.fill_slope;
+    v = Math.max(fg - r, eg);
+  }
+  const blendStart = 55, blendEnd = 80;
+  if (aw > blendEnd) return eg;
+  if (aw > blendStart){ const t=(aw-blendStart)/(blendEnd-blendStart); return v*(1-t)+eg*t; }
+  return v;
 }
 const geo = new THREE.PlaneGeometry(1,1,N-1,LATN-1);
 const pos = geo.attributes.position;
@@ -1192,8 +1200,8 @@ function placeVertices(morph){ // morph 0..1 EG->final
       const cut = Math.max(0,-d), fill = Math.max(0,d);
       const base = earthCol.clone().lerp(grassCol, Math.min(1,Math.abs(o)/LAT*1.4));
       const col = base.clone();
-      if (cut>0.3) col.lerp(cutCol, Math.min(1,cut/8)*morph);
-      if (fill>0.3) col.lerp(fillCol, Math.min(1,fill/8)*morph);
+      if (cut>0.4) col.lerp(cutCol, Math.min(1,cut/6)*morph);
+      if (fill>0.4) col.lerp(fillCol, Math.min(1,fill/6)*morph);
       colors[k*3]=col.r; colors[k*3+1]=col.g; colors[k*3+2]=col.b;
     }
   }
