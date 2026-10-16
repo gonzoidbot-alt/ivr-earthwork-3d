@@ -1198,12 +1198,14 @@ const terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors
 scene.add(terrain);
 
 // ---- road ribbon (appears in paving phase) ----
-const roadGeo = new THREE.PlaneGeometry(1,1,N-1,1);
+const ROAD_END = 2440; // ribbon ends where terrain ends (EG not surveyed beyond 22+00)
+const roadN = S.findIndex(c=>c.s>ROAD_END); if (roadN<0) roadN = N;
+const roadGeo = new THREE.PlaneGeometry(1,1,roadN-1,1);
 {
   const p = roadGeo.attributes.position; let k=0;
   for(let j=0;j<2;j++){
     const o = j===0? -11:11;
-    for(let i=0;i<N;i++,k++){
+    for(let i=0;i<roadN;i++,k++){
       const pr=perp[i], w=world[i];
       p.setXYZ(k, w.x+pr.x*o, (fgY[i]*VSCALE-2220*VSCALE)+0.4, w.y+pr.y*o);
     }
