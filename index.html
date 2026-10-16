@@ -1167,7 +1167,8 @@ function placeVertices(morph){ // morph 0..1 EG->final
   for(let j=0;j<LATN;j++){
     const oRaw = -LAT + (2*LAT)*(j/(LATN-1));
     for(let i=0;i<N;i++,k++){
-      const tw = Math.min(1, Math.min(i, N-1-i)*20/140); // 140-ft taper at each end
+      let tw = Math.min(1, Math.min(i, N-1-i)*20/140); // 140-ft taper at each end
+      if (S[i].s > 2200) tw *= Math.max(0, (2450 - S[i].s)/250); // EG not surveyed past 22+00 — terrain ends, road ribbon continues
       const o = oRaw*tw;
       const p = world[i], pr = perp[i];
       const x = p.x + pr.x*o, z = p.y + pr.y*o;
