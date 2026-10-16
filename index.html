@@ -3,78 +3,182 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d12">
 <title>IVR · Diamond Heights — Earthwork 3D Visualizer</title>
 <style>
+  :root{color-scheme:dark;--bg:#0b0d12;--ink:#e8eaf0;--muted:#9ba7b9;--amber:#ffb86b;--mint:#3ddc97;--line:rgba(190,207,231,.13);--glass:linear-gradient(145deg,rgba(29,37,49,.82),rgba(13,18,26,.86))}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden}
-  body{background:#0b0d12;color:#e8eaf0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  button{font:inherit}
+  button:focus-visible,[role="slider"]:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+  button{touch-action:manipulation}
   #app{position:fixed;inset:0}
-  canvas{display:block}
-  .hdr{position:fixed;top:0;left:0;right:0;padding:14px 20px;background:linear-gradient(180deg,rgba(11,13,18,.92),rgba(11,13,18,0));pointer-events:none;z-index:10}
-  .hdr h1{font-size:18px;letter-spacing:.3px}
-  .hdr h1 b{color:#ffb86b}
-  .hdr p{color:#8b93a7;font-size:12.5px;margin-top:2px}
-  .hdr .chip{display:inline-block;background:#141821;border:1px solid #232a38;border-radius:6px;padding:1px 8px;font-size:11px;color:#8b93a7;margin-right:6px}
-  /* phase panel */
-  .panel{position:fixed;left:20px;bottom:20px;width:340px;max-width:calc(100vw - 40px);background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:16px 18px;z-index:10;backdrop-filter:blur(6px)}
-  .phase-title{display:flex;align-items:baseline;gap:10px}
-  .phase-title .n{font-size:26px;font-weight:800;color:#ffb86b}
-  .phase-title h2{font-size:16px}
-  .phase-detail{color:#8b93a7;font-size:12.5px;margin-top:4px;min-height:34px}
-  .qty{display:inline-block;margin-top:8px;background:rgba(255,184,107,.1);border:1px solid rgba(255,184,107,.35);color:#ffb86b;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;letter-spacing:.3px}
-  .track{margin-top:14px;height:8px;background:#1a1f2b;border-radius:6px;position:relative;cursor:pointer}
-  .track .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#ffb86b,#3ddc97)}
-  .phases{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
-  .phases button{flex:1;min-width:44px;background:#1a1f2b;border:1px solid #232a38;color:#8b93a7;border-radius:8px;padding:6px 2px;font-size:10.5px;cursor:pointer}
-  .phases button.on{background:rgba(255,184,107,.15);border-color:#ffb86b;color:#ffb86b}
-  .phases button.done{color:#3ddc97;border-color:rgba(61,220,151,.4)}
-  .play{margin-top:12px;width:100%;background:#ffb86b;color:#141821;border:none;border-radius:9px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.4px}
-  /* legend */
-  .legend{position:fixed;right:20px;top:70px;background:rgba(20,24,33,.9);border:1px solid #232a38;border-radius:12px;padding:12px 14px;z-index:10;font-size:12px}
-  .legend div{display:flex;align-items:center;gap:8px;margin:5px 0;color:#c8cddc}
-  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
-  .stamp{position:fixed;right:20px;bottom:20px;width:250px;background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:14px 16px;z-index:10}
-  .stamp h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#8b93a7;margin-bottom:8px}
-  .stamp .row{display:flex;justify-content:space-between;font-size:13px;margin:4px 0}
-  .stamp .row b{color:#3ddc97}
-  .flags{position:fixed;left:20px;top:70px;max-width:330px;font-size:10.5px;color:#5b6274;line-height:1.5;z-index:5;pointer-events:none}
-  @media (max-width:720px){ .legend{display:none} .flags{display:none} .stamp{display:none} }
+  canvas{display:block;outline:none;touch-action:none}
+  .hdr{position:fixed;inset:0 0 auto;padding:21px 26px 38px;background:linear-gradient(180deg,rgba(11,13,18,.96),rgba(11,13,18,.65) 58%,transparent);pointer-events:none;z-index:10}
+  .hdr h1{font-size:18px;font-weight:550;letter-spacing:-.35px}
+  .hdr h1 b{color:var(--amber);font-weight:850;letter-spacing:1.4px;margin-right:4px}
+  .hdr p{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;background:rgba(29,37,49,.65);border:1px solid var(--line);border-radius:5px;padding:3px 9px;font-size:10px;letter-spacing:.15px;color:#aab5c6;white-space:nowrap}
+  .glass{background:var(--glass);border:1px solid var(--line);box-shadow:0 18px 60px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.035);backdrop-filter:blur(22px) saturate(130%);-webkit-backdrop-filter:blur(22px) saturate(130%)}
+  .dock{position:fixed;inset:auto 24px 38px;display:grid;grid-template-columns:360px 1fr 276px;gap:18px;align-items:end;z-index:12;pointer-events:none}
+  .dock>*{pointer-events:auto}
+  .panel{grid-column:1;border-radius:18px;padding:19px 20px 17px}
+  .eyebrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px;color:#8997aa;font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}
+  .eyebrow .status-dot{width:5px;height:5px;display:inline-block;border-radius:50%;background:var(--amber);margin-right:6px;box-shadow:0 0 12px rgba(255,184,107,.35)}
+  .overview{border:0;background:none;color:#bac5d3;font-size:10px;letter-spacing:.1px;cursor:pointer;padding:3px 0 3px 7px}
+  .overview:hover{color:var(--amber)}
+  .phase-title{display:flex;align-items:center;gap:13px;min-height:43px}
+  .phase-title .n{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:11px;border:1px solid rgba(255,184,107,.23);background:linear-gradient(145deg,rgba(255,184,107,.12),rgba(255,184,107,.03));font-size:24px;font-weight:750;color:var(--amber);font-variant-numeric:tabular-nums}
+  .phase-title h2{font-size:17px;line-height:1.25;font-weight:600;letter-spacing:-.3px}
+  .phase-detail{color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:11px;min-height:39px}
+  .qty-wrap{min-height:48px;padding-top:10px;overflow:hidden}
+  .qty{display:inline-flex;align-items:center;min-height:30px;background:rgba(255,184,107,.065);border:1px solid rgba(255,184,107,.2);color:#ffc68b;border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:.25px;font-variant-numeric:tabular-nums}
+  .qty.phase-change{animation:quantity-in .42s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes quantity-in{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+  .track-label{display:flex;justify-content:space-between;margin:10px 0 3px;color:#7f8da2;font-size:9px;letter-spacing:1.1px;text-transform:uppercase}
+  #phase-progress{color:#b7c2d1;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+  .track{height:22px;position:relative;cursor:ew-resize;touch-action:none}
+  .track:before{content:"";position:absolute;inset:9px 0;background:#28313e;border-radius:4px}
+  .track .fill{position:absolute;left:0;right:0;top:9px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--amber),var(--mint));transform:scaleX(1);transform-origin:left;will-change:transform}
+  .track .thumb{position:absolute;top:6px;left:100%;width:10px;height:10px;margin-left:-5px;background:#e0eadf;border:2px solid #152029;border-radius:50%;box-shadow:0 0 0 1px rgba(168,198,183,.5);pointer-events:none}
+  .phases{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:7px}
+  .phases button{position:relative;min-width:0;background:rgba(28,36,48,.8);border:1px solid rgba(157,177,204,.11);color:#8f9db0;border-radius:7px;padding:8px 1px;font-size:9px;cursor:pointer;transition:background .2s,border-color .2s,color .2s,transform .2s}
+  .phases button:hover{background:rgba(61,74,92,.6);transform:translateY(-2px)}
+  .phases button.on{background:rgba(255,184,107,.11);border-color:rgba(255,184,107,.6);color:var(--amber)}
+  .phases button.done{color:#88c8ab;border-color:rgba(61,220,151,.22)}
+  .actions{display:grid;grid-template-columns:1fr 104px;gap:8px;margin-top:13px}
+  .play{background:linear-gradient(135deg,#ffc78d,#edaa65);color:#231c15;border:1px solid rgba(255,221,177,.4);border-radius:9px;min-height:39px;padding:9px 6px;font-weight:800;font-size:10px;cursor:pointer;letter-spacing:.45px;box-shadow:0 4px 16px rgba(255,184,107,.08);transition:filter .2s,transform .2s}
+  .play:hover{filter:brightness(1.08)}
+  .play:active{transform:translateY(1px)}
+  .follow{display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(24,32,43,.8);border:1px solid var(--line);border-radius:9px;color:#9ba7b9;font-size:10.5px;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+  .follow:before{content:"";width:5px;height:5px;flex-shrink:0;border-radius:50%;background:#677184}
+  .follow[aria-pressed="true"]{color:#b0ead0;border-color:rgba(61,220,151,.3);background:rgba(61,220,151,.055)}
+  .follow[aria-pressed="true"]:before{background:var(--mint);box-shadow:0 0 7px rgba(61,220,151,.45)}
+  .control-hint{margin-top:11px;color:#6e7e93;text-align:center;font-size:9px;letter-spacing:.2px}
+  .legend{position:fixed;right:24px;top:112px;width:276px;border-radius:14px;padding:14px 16px;font-size:10.5px}
+  .legend h3{font-size:9px;font-weight:650;letter-spacing:1.8px;color:#8997aa;text-transform:uppercase;margin-bottom:10px}
+  .legend .legend-row{display:flex;align-items:center;gap:10px;margin:8px 0;color:#b6c0cf;line-height:1.5}
+  .legend .legend-row:last-child{margin-bottom:0}
+  .sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+  .stamp{grid-column:3;border-radius:15px;padding:16px 18px}
+  .stamp h3{font-size:9px;font-weight:650;text-transform:uppercase;letter-spacing:1px;color:#8997aa;margin-bottom:12px}
+  .stamp .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:11.5px;padding:5px 0;color:#b1bccb;border-bottom:1px solid rgba(155,176,204,.065)}
+  .stamp .row:last-child{border-bottom:0;padding-bottom:0}
+  .stamp .row b{color:#a5dfc1;font-weight:650;font-variant-numeric:tabular-nums}
+  .stamp .row.export{margin-top:2px;padding-top:8px}
+  .stamp .row.export b{color:var(--mint);font-size:17px;letter-spacing:-.45px}
+  .flags{position:fixed;left:26px;top:112px;max-width:305px;font-size:10px;color:#8492a5;line-height:1.75;z-index:5}
+  .flags>p:first-child{padding-left:11px;border-left:1px solid rgba(255,184,107,.3)}
+  .flags .visual-note{margin:10px 0 0 12px;color:#697a90;font-size:9px;line-height:1.65}
+  .flags details{margin:10px 0 0 12px;font-size:9px;max-height:200px;overflow:auto}
+  .flags summary{cursor:pointer;color:#a7b4c6;padding-bottom:4px}
+  .flags ul{padding:4px 0 0 14px;color:#8492a5}
+  .flags li{margin:5px 0}
+  .view-status{position:fixed;top:112px;left:50%;transform:translateX(-50%);pointer-events:none;text-align:center;z-index:5}
+  .view-status .kicker{color:#7d90a7;font-size:9px;letter-spacing:2.3px}
+  .view-status .state{display:inline-flex;align-items:center;gap:7px;margin-top:7px;padding:4px 10px;border:1px solid rgba(161,188,217,.12);border-radius:20px;color:#b1c1d2;background:rgba(12,19,28,.35);font-size:9px;letter-spacing:.7px}
+  .view-status .state:before{content:"";width:4px;height:4px;border-radius:50%;background:var(--mint)}
+  footer{position:fixed;bottom:11px;left:20px;right:20px;text-align:center;color:#65758a;font-size:9px;letter-spacing:.15px;z-index:15;pointer-events:none}
+  #loading{position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:20;color:#b5c4d6;font-size:10px;letter-spacing:2px;pointer-events:none;transition:opacity .4s}
+  #loading:before{content:"";display:block;width:30px;height:2px;margin:0 auto 12px;background:var(--amber);animation:loading-pulse 1s infinite alternate}
+  @keyframes loading-pulse{to{opacity:.2;transform:scaleX(.5)}}
+  #error{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);max-width:340px;padding:20px;border-radius:14px;z-index:25;text-align:center}
+  @media(min-width:1600px){.dock{grid-template-columns:380px 1fr 290px}.legend{width:290px}.panel{padding:22px}.phase-title h2{font-size:18px}}
+  @media(max-width:1050px) and (min-width:761px){.flags{max-width:245px;font-size:9px}.view-status{top:105px}.view-status .kicker{font-size:8px;letter-spacing:1px}.dock{grid-template-columns:330px 1fr 244px}.legend{width:244px}.panel{padding:16px}.phase-title h2{font-size:15px}.legend .legend-row{font-size:10px}}
+  @media(max-width:760px){
+    .hdr{padding:16px 16px 28px}
+    .hdr h1{font-size:14px;line-height:1.5;letter-spacing:-.2px}
+    .hdr p{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;pointer-events:auto;margin-top:7px}
+    .hdr p::-webkit-scrollbar{display:none}
+    .chip{font-size:9px;padding:3px 7px}
+    .view-status{top:99px;width:100%}
+    .view-status .kicker{font-size:8px;letter-spacing:1.6px}
+    .view-status .state{font-size:8px}
+    .dock{left:12px;right:12px;bottom:40px;display:flex;flex-direction:column;align-items:stretch;gap:10px;max-height:44vh;max-height:44dvh;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#3a4656 transparent;border-radius:16px;pointer-events:auto;padding-bottom:2px}
+    .panel{order:1;flex-shrink:0;padding:15px 16px 13px;border-radius:16px}
+    .eyebrow{margin-bottom:9px}
+    .phase-title{min-height:36px}
+    .phase-title .n{width:35px;height:35px;font-size:22px}
+    .phase-title h2{font-size:16px}
+    .phase-detail{margin-top:9px;min-height:34px;font-size:11px}
+    .qty-wrap{min-height:43px;padding-top:8px}
+    .qty{font-size:11px}
+    .track-label{margin-top:7px}
+    .phases{margin-top:3px}
+    .actions{margin-top:10px}
+    .control-hint{margin-top:8px;font-size:8px}
+    .legend{position:static;order:2;width:auto;flex-shrink:0;padding:15px 17px;display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+    .legend h3{grid-column:1/-1;margin-bottom:4px}
+    .legend .legend-row{font-size:10px;margin:5px 0}
+    .stamp{order:3;flex-shrink:0}
+    .flags{position:static;order:4;max-width:none;flex-shrink:0;background:rgba(13,18,26,.92);border:1px solid var(--line);border-radius:14px;padding:16px;font-size:10px}
+    .flags details{max-height:none}
+    footer{bottom:7px;left:15px;right:15px;font-size:8px;line-height:1.5}
+  }
+  @media(max-height:650px) and (min-width:761px){.dock{max-height:58vh}.panel{padding:12px 15px}.eyebrow{margin-bottom:5px}.phase-detail{min-height:29px;font-size:10px}.qty-wrap{min-height:38px;padding-top:6px}.flags{font-size:8px;max-width:245px}.flags .visual-note,.flags details{display:none}.legend{padding:10px 14px;top:103px}.legend .legend-row{margin:5px 0}.control-hint{margin-top:6px}}
+  @media(prefers-reduced-motion:reduce){*,*:before{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app" aria-label="Interactive three-dimensional earthwork corridor"></div>
+<div id="loading" role="status">BUILDING CORRIDOR</div>
+<div id="error" class="glass" role="alert" hidden></div>
+
 <header class="hdr">
   <h1><b>IVR</b> · Diamond Heights Subdivision — Earthwork Visualizer</h1>
   <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">STA 8+00 → 29+14</span></p>
 </header>
-<div class="flags">
-  PILOT DATA NOTES — Horizontal alignment schematic (profile data exact). C-6/C-7 overlap conflict carried per cutfill package. Cul-de-sac FG not printed (estimated). Quantities stamped = audited MC p50 values, not recomputed from this surface. Cut/fill heat map withheld: C-5 EG/FG vision reads conflict (~35 ft at 16+20); reconciling against printed sheets before enabling.
+
+<div class="view-status">
+  <div class="kicker">SCHEMATIC ALIGNMENT · 2.2× VERTICAL</div>
+  <div class="state" id="view-state">EXISTING GROUND</div>
 </div>
-<div class="legend">
-  <div><span class="sw" style="background:#7a5c48"></span>Existing ground</div>
-  <div><span class="sw" style="background:#4a4f5a"></span>Cut/fill heat map — pending reconciled profiles</div>
-  <div><span class="sw" style="background:#565d6b"></span>Roadway</div>
-  <div><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
-  <div><span class="sw" style="background:#3ddc97"></span>Utilities</div>
-  <div><span class="sw" style="background:#4a4f5a"></span>EG not read (22+00+)</div>
+
+<div class="dock">
+  <section class="panel glass" aria-label="Installation phase controls">
+    <div class="eyebrow"><span><span class="status-dot"></span>Install sequence</span><button class="overview" id="overview" type="button">↗ Overview</button></div>
+    <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear &amp; Grub</h2></div>
+    <div class="phase-detail" id="ph-detail"></div>
+    <div class="qty-wrap" aria-live="polite" aria-atomic="true"><span class="qty" id="ph-qty"></span></div>
+    <div class="track-label"><span>Phase progress</span><span id="phase-progress">100%</span></div>
+    <div class="track" id="track" role="slider" tabindex="0" aria-label="Progress within the selected phase" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="fill" id="trackfill"></div><div class="thumb" id="trackthumb"></div></div>
+    <div class="phases" id="phasebtns" aria-label="Select installation phase"></div>
+    <div class="actions">
+      <button class="play" id="play" type="button">▶ PLAY INSTALL SEQUENCE</button>
+      <button class="follow" id="follow" type="button" aria-pressed="true" title="Glide along the alignment during playback">Follow road</button>
+    </div>
+    <div class="control-hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
+  </section>
+
+  <aside class="legend glass" aria-label="Surface legend">
+    <h3>Surface key</h3>
+    <div class="legend-row"><span class="sw" style="background:#7a5c48"></span>Existing ground</div>
+    <div class="legend-row"><span class="sw" style="background:#4a4f5a"></span>Cut/fill heat map — pending reconciled profiles</div>
+    <div class="legend-row"><span class="sw" style="background:#565d6b"></span>Roadway</div>
+    <div class="legend-row"><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
+    <div class="legend-row"><span class="sw" style="background:#3ddc97"></span>Utilities</div>
+    <div class="legend-row"><span class="sw" style="background:#4a4f5a"></span>EG not read (22+00+)</div>
+  </aside>
+
+  <aside class="stamp glass">
+    <h3>Earthwork summary (audited p50)</h3>
+    <div class="row"><span>Cut</span><b>12,805 CY</b></div>
+    <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
+    <div class="row export"><span>Net export</span><b>11,201 CY</b></div>
+    <div class="row"><span>Road</span><b>2,114 LF</b></div>
+    <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
+    <div class="row"><span>Wall</span><b>19.13' max</b></div>
+  </aside>
+
+  <aside class="flags">
+    <p>PILOT DATA NOTES — Horizontal alignment schematic (profile data exact). C-6/C-7 overlap conflict carried per cutfill package. Cul-de-sac FG not printed (estimated). Quantities stamped = audited MC p50 values, not recomputed from this surface. Cut/fill heat map withheld: C-5 EG/FG vision reads conflict (~35 ft at 16+20); reconciling against printed sheets before enabling.</p>
+    <p class="visual-note">Display taper ends at STA 24+50; EG beyond STA 22+00 remains unread. Lateral terrain and wall height envelope are schematic. Wall length and maximum height follow the audited data. Dark display edges are section cuts, not surveyed slopes.</p>
+    <details><summary>Data quality &amp; model scope</summary><ul id="data-flags"></ul></details>
+  </aside>
 </div>
-<div class="panel">
-  <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear & Grub</h2></div>
-  <div class="phase-detail" id="ph-detail"></div>
-  <div><span class="qty" id="ph-qty"></span></div>
-  <div class="track" id="track"><div class="fill" id="trackfill" style="width:0%"></div></div>
-  <div class="phases" id="phasebtns"></div>
-  <button class="play" id="play">▶ PLAY INSTALL SEQUENCE</button>
-</div>
-<div class="stamp">
-  <h3>Earthwork summary (audited p50)</h3>
-  <div class="row"><span>Cut</span><b>12,805 CY</b></div>
-  <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
-  <div class="row"><span>Net export</span><b>11,201 CY</b></div>
-  <div class="row"><span>Road</span><b>2,114 LF</b></div>
-  <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
-  <div class="row"><span>Wall</span><b>19.13' max</b></div>
-</div>
+
+<footer>IVR Excavation · Earthwork Visualizer pilot · profile data from audited takeoff package · for client presentation</footer>
 
 <script type="importmap">
 {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
@@ -100,7 +204,7 @@ const DATA = {
    "s": 800,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
    "x": 0.0,
    "y": 0.0
@@ -109,927 +213,872 @@ const DATA = {
    "s": 820,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 19.4,
-   "y": 8.4
+   "x": 20.0,
+   "y": 0.0
   },
   {
    "s": 840,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 38.7,
-   "y": 16.8
+   "x": 40.0,
+   "y": 0.0
   },
   {
    "s": 860,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 58.1,
-   "y": 25.2
+   "x": 60.0,
+   "y": 0.0
   },
   {
    "s": 880,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 77.4,
-   "y": 33.5
+   "x": 80.0,
+   "y": 0.0
   },
   {
    "s": 900,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 96.8,
-   "y": 41.9
+   "x": 100.0,
+   "y": 0.0
   },
   {
    "s": 920,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 116.2,
-   "y": 50.2
+   "x": 120.0,
+   "y": 0.0
   },
   {
    "s": 940,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 135.5,
-   "y": 58.5
+   "x": 140.0,
+   "y": 0.0
   },
   {
    "s": 960,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 154.9,
-   "y": 66.8
+   "x": 160.0,
+   "y": 0.0
   },
   {
    "s": 980,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 174.2,
-   "y": 75.0
+   "x": 180.0,
+   "y": 0.0
   },
   {
    "s": 1000,
    "eg": 2220.8,
    "fg": 2220.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.04,
-   "x": 193.6,
-   "y": 83.2
+   "x": 200.0,
+   "y": 0.0
   },
   {
    "s": 1020,
    "eg": 2222.1,
    "fg": 2220.84,
    "cut": 1.26,
-   "fill": 0.0,
-   "x": 212.9,
-   "y": 91.3
+   "fill": 0,
+   "x": 220.0,
+   "y": 0.0
   },
   {
    "s": 1040,
    "eg": 2230.6,
    "fg": 2221.49,
    "cut": 9.11,
-   "fill": 0.0,
-   "x": 232.3,
-   "y": 99.4
+   "fill": 0,
+   "x": 240.0,
+   "y": 0.0
   },
   {
    "s": 1060,
    "eg": 2233.6,
    "fg": 2222.62,
    "cut": 10.98,
-   "fill": 0.0,
-   "x": 251.7,
-   "y": 107.4
+   "fill": 0,
+   "x": 257.1,
+   "y": -8.8
   },
   {
    "s": 1080,
    "eg": 2237.9,
    "fg": 2224.11,
    "cut": 13.79,
-   "fill": 0.0,
-   "x": 271.0,
-   "y": 115.3
+   "fill": 0,
+   "x": 259.9,
+   "y": -27.9
   },
   {
    "s": 1100,
    "eg": 2239.0,
    "fg": 2225.96,
    "cut": 13.04,
-   "fill": 0.0,
-   "x": 290.4,
-   "y": 123.2
+   "fill": 0,
+   "x": 245.9,
+   "y": -41.2
   },
   {
    "s": 1120,
    "eg": 2241.0,
    "fg": 2228.18,
    "cut": 12.82,
-   "fill": 0.0,
-   "x": 309.7,
-   "y": 131.1
+   "fill": 0,
+   "x": 226.0,
+   "y": -39.6
   },
   {
    "s": 1140,
    "eg": 2239.6,
    "fg": 2230.58,
    "cut": 9.02,
-   "fill": 0.0,
-   "x": 329.1,
-   "y": 138.8
+   "fill": 0,
+   "x": 206.1,
+   "y": -37.9
   },
   {
    "s": 1160,
    "eg": 2241.2,
    "fg": 2232.98,
    "cut": 8.22,
-   "fill": 0.0,
-   "x": 348.5,
-   "y": 146.5
+   "fill": 0,
+   "x": 186.2,
+   "y": -36.1
   },
   {
    "s": 1180,
    "eg": 2243.7,
    "fg": 2235.38,
    "cut": 8.32,
-   "fill": 0.0,
-   "x": 367.8,
-   "y": 154.1
+   "fill": 0,
+   "x": 166.2,
+   "y": -34.4
   },
   {
    "s": 1200,
    "eg": 2243.6,
    "fg": 2237.78,
    "cut": 5.82,
-   "fill": 0.0,
-   "x": 387.2,
-   "y": 161.5
+   "fill": 0,
+   "x": 146.3,
+   "y": -32.7
   },
   {
    "s": 1220,
    "eg": 2244.7,
    "fg": 2240.18,
    "cut": 4.52,
-   "fill": 0.0,
-   "x": 406.5,
-   "y": 168.9
+   "fill": 0,
+   "x": 126.4,
+   "y": -30.9
   },
   {
    "s": 1240,
    "eg": 2247.8,
    "fg": 2242.58,
    "cut": 5.22,
-   "fill": 0.0,
-   "x": 425.9,
-   "y": 176.3
+   "fill": 0,
+   "x": 106.5,
+   "y": -29.2
   },
   {
    "s": 1260,
    "eg": 2251.0,
    "fg": 2244.98,
    "cut": 6.02,
-   "fill": 0.0,
-   "x": 445.3,
-   "y": 183.4
+   "fill": 0,
+   "x": 86.5,
+   "y": -27.4
   },
   {
    "s": 1280,
    "eg": 2252.6,
    "fg": 2247.38,
    "cut": 5.22,
-   "fill": 0.0,
-   "x": 464.6,
-   "y": 190.5
+   "fill": 0,
+   "x": 66.6,
+   "y": -25.7
   },
   {
    "s": 1300,
    "eg": 2253.7,
    "fg": 2249.78,
    "cut": 3.92,
-   "fill": 0.0,
-   "x": 484.0,
-   "y": 197.5
+   "fill": 0,
+   "x": 46.7,
+   "y": -23.9
   },
   {
    "s": 1320,
    "eg": 2254.7,
    "fg": 2252.18,
    "cut": 2.52,
-   "fill": 0.0,
-   "x": 503.3,
-   "y": 204.4
+   "fill": 0,
+   "x": 26.8,
+   "y": -22.2
   },
   {
    "s": 1340,
    "eg": 2255.7,
    "fg": 2254.58,
    "cut": 1.12,
-   "fill": 0.0,
-   "x": 522.7,
-   "y": 211.2
+   "fill": 0,
+   "x": 6.9,
+   "y": -20.5
   },
   {
    "s": 1360,
    "eg": 2256.7,
    "fg": 2256.98,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.28,
-   "x": 542.1,
-   "y": 217.8
+   "x": -13.1,
+   "y": -18.7
   },
   {
    "s": 1380,
    "eg": 2258.5,
    "fg": 2259.38,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.88,
-   "x": 561.4,
-   "y": 224.3
+   "x": -33.0,
+   "y": -17.0
   },
   {
    "s": 1400,
    "eg": 2260.0,
    "fg": 2261.78,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.78,
-   "x": 580.8,
-   "y": 230.7
+   "x": -53.0,
+   "y": -16.1
   },
   {
    "s": 1420,
    "eg": 2262.5,
    "fg": 2264.18,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.68,
-   "x": 600.1,
-   "y": 237.0
+   "x": -73.0,
+   "y": -15.4
   },
   {
    "s": 1440,
    "eg": 2265.4,
    "fg": 2266.58,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.18,
-   "x": 619.5,
-   "y": 243.1
+   "x": -93.0,
+   "y": -14.8
   },
   {
    "s": 1460,
    "eg": 2268.2,
    "fg": 2268.98,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.78,
-   "x": 638.8,
-   "y": 249.1
+   "x": -112.9,
+   "y": -14.1
   },
   {
    "s": 1480,
    "eg": 2272.0,
    "fg": 2271.38,
    "cut": 0.62,
-   "fill": 0.0,
-   "x": 658.2,
-   "y": 254.9
+   "fill": 0,
+   "x": -132.9,
+   "y": -13.4
   },
   {
    "s": 1500,
    "eg": 2274.1,
    "fg": 2273.78,
    "cut": 0.32,
-   "fill": 0.0,
-   "x": 677.6,
-   "y": 260.6
+   "fill": 0,
+   "x": -152.9,
+   "y": -12.8
   },
   {
    "s": 1520,
    "eg": 2276.5,
    "fg": 2276.18,
    "cut": 0.32,
-   "fill": 0.0,
-   "x": 696.9,
-   "y": 266.2
+   "fill": 0,
+   "x": -172.9,
+   "y": -12.1
   },
   {
    "s": 1540,
    "eg": 2280.4,
    "fg": 2278.58,
    "cut": 1.82,
-   "fill": 0.0,
-   "x": 716.3,
-   "y": 271.6
+   "fill": 0,
+   "x": -192.9,
+   "y": -11.4
   },
   {
    "s": 1560,
    "eg": 2281.4,
    "fg": 2280.98,
    "cut": 0.42,
-   "fill": 0.0,
-   "x": 735.6,
-   "y": 276.9
+   "fill": 0,
+   "x": -212.9,
+   "y": -10.8
   },
   {
    "s": 1580,
    "eg": 2283.5,
    "fg": 2283.38,
    "cut": 0.12,
-   "fill": 0.0,
-   "x": 755.0,
-   "y": 282.0
+   "fill": 0,
+   "x": -232.9,
+   "y": -10.1
   },
   {
    "s": 1600,
    "eg": 2284.1,
    "fg": 2285.78,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.68,
-   "x": 774.4,
-   "y": 286.9
+   "x": -252.9,
+   "y": -9.5
   },
   {
    "s": 1620,
    "eg": 2285.3,
    "fg": 2288.18,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 2.88,
-   "x": 793.7,
-   "y": 291.7
+   "x": -272.9,
+   "y": -8.8
   },
   {
    "s": 1640,
    "eg": 2287.5,
    "fg": 2290.58,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 3.08,
-   "x": 813.1,
-   "y": 296.3
+   "x": -292.8,
+   "y": -8.1
   },
   {
    "s": 1660,
    "eg": 2289.7,
    "fg": 2292.98,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 3.28,
-   "x": 832.4,
-   "y": 300.8
+   "x": -312.8,
+   "y": -7.5
   },
   {
    "s": 1680,
    "eg": 2293.6,
    "fg": 2295.38,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.78,
-   "x": 851.8,
-   "y": 305.1
+   "x": -332.8,
+   "y": -6.8
   },
   {
    "s": 1700,
    "eg": 2299.2,
    "fg": 2297.78,
    "cut": 1.42,
-   "fill": 0.0,
-   "x": 871.2,
-   "y": 309.2
+   "fill": 0,
+   "x": -352.8,
+   "y": -6.1
   },
   {
    "s": 1720,
    "eg": 2302.2,
    "fg": 2300.18,
    "cut": 2.02,
-   "fill": 0.0,
-   "x": 890.5,
-   "y": 313.1
+   "fill": 0,
+   "x": -372.8,
+   "y": -5.5
   },
   {
    "s": 1740,
    "eg": 2305.2,
    "fg": 2302.58,
    "cut": 2.62,
-   "fill": 0.0,
-   "x": 909.9,
-   "y": 316.9
+   "fill": 0,
+   "x": -392.8,
+   "y": -4.8
   },
   {
    "s": 1760,
    "eg": 2308.2,
    "fg": 2304.98,
    "cut": 3.22,
-   "fill": 0.0,
-   "x": 929.2,
-   "y": 320.5
+   "fill": 0,
+   "x": -412.7,
+   "y": -3.2
   },
   {
    "s": 1780,
    "eg": 2311.2,
    "fg": 2307.38,
    "cut": 3.82,
-   "fill": 0.0,
-   "x": 948.6,
-   "y": 324.0
+   "fill": 0,
+   "x": -432.4,
+   "y": 0.4
   },
   {
    "s": 1800,
    "eg": 2314.1,
    "fg": 2309.78,
    "cut": 4.32,
-   "fill": 0.0,
-   "x": 968.0,
-   "y": 327.2
+   "fill": 0,
+   "x": -451.9,
+   "y": -0.2
   },
   {
    "s": 1820,
    "eg": 2316.9,
    "fg": 2312.18,
    "cut": 4.72,
-   "fill": 0.0,
-   "x": 987.3,
-   "y": 330.3
+   "fill": 0,
+   "x": -471.5,
+   "y": -4.2
   },
   {
    "s": 1840,
    "eg": 2321.0,
    "fg": 2314.58,
    "cut": 6.42,
-   "fill": 0.0,
-   "x": 1006.7,
-   "y": 333.2
+   "fill": 0,
+   "x": -491.1,
+   "y": -8.2
   },
   {
    "s": 1860,
    "eg": 2324.8,
    "fg": 2316.98,
    "cut": 7.82,
-   "fill": 0.0,
-   "x": 1026.0,
-   "y": 336.0
+   "fill": 0,
+   "x": -510.7,
+   "y": -12.2
   },
   {
    "s": 1880,
    "eg": 2327.7,
    "fg": 2319.38,
    "cut": 8.32,
-   "fill": 0.0,
-   "x": 1045.4,
-   "y": 338.5
+   "fill": 0,
+   "x": -530.3,
+   "y": -16.2
   },
   {
    "s": 1900,
    "eg": 2328.8,
    "fg": 2321.78,
    "cut": 7.02,
-   "fill": 0.0,
-   "x": 1064.7,
-   "y": 340.9
+   "fill": 0,
+   "x": -549.9,
+   "y": -20.3
   },
   {
    "s": 1920,
    "eg": 2327.6,
    "fg": 2324.18,
    "cut": 3.42,
-   "fill": 0.0,
-   "x": 1084.1,
-   "y": 343.1
+   "fill": 0,
+   "x": -569.4,
+   "y": -24.3
   },
   {
    "s": 1940,
    "eg": 2325.5,
    "fg": 2326.58,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.08,
-   "x": 1103.5,
-   "y": 345.1
+   "x": -589.0,
+   "y": -28.3
   },
   {
    "s": 1960,
    "eg": 2322.6,
    "fg": 2328.98,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 6.38,
-   "x": 1122.8,
-   "y": 346.9
+   "x": -608.6,
+   "y": -32.3
   },
   {
    "s": 1980,
    "eg": 2321.2,
    "fg": 2331.38,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 10.18,
-   "x": 1142.2,
-   "y": 348.5
+   "x": -628.0,
+   "y": -37.1
   },
   {
    "s": 2000,
    "eg": 2323.9,
    "fg": 2333.78,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 9.88,
-   "x": 1161.5,
-   "y": 350.0
+   "x": -644.4,
+   "y": -48.3
   },
   {
    "s": 2020,
    "eg": 2330.5,
    "fg": 2336.18,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 5.68,
-   "x": 1180.9,
-   "y": 351.3
+   "x": -654.7,
+   "y": -65.2
   },
   {
    "s": 2040,
    "eg": 2339.2,
    "fg": 2338.58,
    "cut": 0.62,
-   "fill": 0.0,
-   "x": 1200.3,
-   "y": 352.4
+   "fill": 0,
+   "x": -657.0,
+   "y": -84.9
   },
   {
    "s": 2060,
    "eg": 2347.5,
    "fg": 2340.98,
    "cut": 6.52,
-   "fill": 0.0,
-   "x": 1219.6,
-   "y": 353.3
+   "fill": 0,
+   "x": -650.9,
+   "y": -103.8
   },
   {
    "s": 2080,
    "eg": 2355.9,
    "fg": 2343.38,
    "cut": 12.52,
-   "fill": 0.0,
-   "x": 1239.0,
-   "y": 354.0
+   "fill": 0,
+   "x": -637.5,
+   "y": -118.4
   },
   {
    "s": 2100,
    "eg": 2363.0,
    "fg": 2345.78,
    "cut": 17.22,
-   "fill": 0.0,
-   "x": 1258.3,
-   "y": 354.6
+   "fill": 0,
+   "x": -619.1,
+   "y": -126.1
   },
   {
    "s": 2120,
    "eg": 2368.5,
    "fg": 2348.18,
    "cut": 20.32,
-   "fill": 0.0,
-   "x": 1277.7,
-   "y": 354.9
+   "fill": 0,
+   "x": -600.7,
+   "y": -120.4
   },
   {
    "s": 2140,
    "eg": 2369.1,
    "fg": 2350.58,
    "cut": 18.52,
-   "fill": 0.0,
-   "x": 1297.1,
-   "y": 355.1
+   "fill": 0,
+   "x": -582.8,
+   "y": -111.4
   },
   {
    "s": 2160,
    "eg": 2370.0,
    "fg": 2352.98,
    "cut": 17.02,
-   "fill": 0.0,
-   "x": 1316.4,
-   "y": 355.2
+   "fill": 0,
+   "x": -564.9,
+   "y": -102.5
   },
   {
    "s": 2180,
    "eg": 2371.5,
    "fg": 2355.38,
    "cut": 16.12,
-   "fill": 0.0,
-   "x": 1335.8,
-   "y": 355.0
+   "fill": 0,
+   "x": -547.1,
+   "y": -93.5
   },
   {
    "s": 2200,
    "eg": 2372.2,
    "fg": 2357.78,
    "cut": 14.42,
-   "fill": 0.0,
-   "x": 1355.1,
-   "y": 354.7
+   "fill": 0,
+   "x": -529.2,
+   "y": -84.6
   },
   {
    "s": 2220,
    "eg": 2372.2,
    "fg": 2358.68,
    "cut": 13.52,
-   "fill": 0.0,
-   "x": 1374.5,
-   "y": 354.2,
-   "nodata": true
+   "fill": 0,
+   "x": -511.5,
+   "y": -75.3
   },
   {
    "s": 2240,
    "eg": 2372.2,
    "fg": 2359.58,
    "cut": 12.62,
-   "fill": 0.0,
-   "x": 1393.9,
-   "y": 353.5,
-   "nodata": true
+   "fill": 0,
+   "x": -494.1,
+   "y": -65.3
   },
   {
    "s": 2260,
    "eg": 2372.2,
    "fg": 2360.47,
    "cut": 11.73,
-   "fill": 0.0,
-   "x": 1413.2,
-   "y": 352.7,
-   "nodata": true
+   "fill": 0,
+   "x": -477.1,
+   "y": -54.7
   },
   {
    "s": 2280,
    "eg": 2372.2,
    "fg": 2361.37,
    "cut": 10.83,
-   "fill": 0.0,
-   "x": 1432.6,
-   "y": 351.7,
-   "nodata": true
+   "fill": 0,
+   "x": -460.6,
+   "y": -43.5
   },
   {
    "s": 2300,
    "eg": 2372.2,
    "fg": 2362.27,
    "cut": 9.93,
-   "fill": 0.0,
-   "x": 1451.9,
-   "y": 350.5,
-   "nodata": true
+   "fill": 0,
+   "x": -444.5,
+   "y": -31.7
   },
   {
    "s": 2320,
    "eg": 2372.2,
    "fg": 2363.17,
    "cut": 9.03,
-   "fill": 0.0,
-   "x": 1471.3,
-   "y": 349.1,
-   "nodata": true
+   "fill": 0,
+   "x": -428.8,
+   "y": -19.2
   },
   {
    "s": 2340,
    "eg": 2372.2,
    "fg": 2364.07,
    "cut": 8.13,
-   "fill": 0.0,
-   "x": 1490.6,
-   "y": 347.6,
-   "nodata": true
+   "fill": 0,
+   "x": -413.6,
+   "y": -6.3
   },
   {
    "s": 2360,
    "eg": 2372.2,
    "fg": 2364.96,
    "cut": 7.24,
-   "fill": 0.0,
-   "x": 1510.0,
-   "y": 345.9,
-   "nodata": true
+   "fill": 0,
+   "x": -398.4,
+   "y": 6.7
   },
   {
    "s": 2380,
    "eg": 2372.2,
    "fg": 2365.86,
    "cut": 6.34,
-   "fill": 0.0,
-   "x": 1529.4,
-   "y": 344.1,
-   "nodata": true
+   "fill": 0,
+   "x": -383.2,
+   "y": 19.7
   },
   {
    "s": 2400,
    "eg": 2372.2,
    "fg": 2366.76,
    "cut": 5.44,
-   "fill": 0.0,
-   "x": 1548.7,
-   "y": 342.1,
-   "nodata": true
+   "fill": 0,
+   "x": -368.0,
+   "y": 32.8
   },
   {
    "s": 2420,
    "eg": 2372.2,
    "fg": 2367.66,
    "cut": 4.54,
-   "fill": 0.0,
-   "x": 1568.1,
-   "y": 340.0,
-   "nodata": true
+   "fill": 0,
+   "x": -352.8,
+   "y": 45.8
   },
   {
    "s": 2440,
    "eg": 2372.2,
    "fg": 2368.56,
    "cut": 3.64,
-   "fill": 0.0,
-   "x": 1587.4,
-   "y": 337.7,
-   "nodata": true
+   "fill": 0,
+   "x": -337.6,
+   "y": 58.8
   },
   {
    "s": 2460,
    "eg": 2372.2,
    "fg": 2369.45,
    "cut": 2.75,
-   "fill": 0.0,
-   "x": 1606.8,
-   "y": 335.3,
-   "nodata": true
+   "fill": 0,
+   "x": -322.5,
+   "y": 71.8
   },
   {
    "s": 2480,
    "eg": 2372.2,
    "fg": 2370.35,
    "cut": 1.85,
-   "fill": 0.0,
-   "x": 1626.2,
-   "y": 332.7,
-   "nodata": true
+   "fill": 0,
+   "x": -307.3,
+   "y": 84.8
   },
   {
    "s": 2500,
    "eg": 2372.2,
    "fg": 2371.25,
    "cut": 0.95,
-   "fill": 0.0,
-   "x": 1645.5,
-   "y": 330.0,
-   "nodata": true
+   "fill": 0,
+   "x": -292.1,
+   "y": 97.8
   },
   {
    "s": 2520,
    "eg": 2372.2,
    "fg": 2372.15,
    "cut": 0.05,
-   "fill": 0.0,
-   "x": 1664.9,
-   "y": 327.1,
-   "nodata": true
+   "fill": 0,
+   "x": -276.9,
+   "y": 110.9
   },
   {
    "s": 2540,
    "eg": 2372.2,
    "fg": 2373.05,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 0.85,
-   "x": 1684.2,
-   "y": 324.1,
-   "nodata": true
+   "x": -261.7,
+   "y": 123.9
   },
   {
    "s": 2560,
    "eg": 2372.2,
    "fg": 2373.94,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 1.74,
-   "x": 1703.6,
-   "y": 321.0,
-   "nodata": true
+   "x": -246.5,
+   "y": 136.9
   },
   {
    "s": 2580,
    "eg": 2372.2,
    "fg": 2374.84,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 2.64,
-   "x": 1723.0,
-   "y": 317.7,
-   "nodata": true
+   "x": -231.3,
+   "y": 149.9
   },
   {
    "s": 2600,
    "eg": 2372.2,
    "fg": 2375.74,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 3.54,
-   "x": 1742.3,
-   "y": 314.4,
-   "nodata": true
+   "x": -216.2,
+   "y": 162.9
   },
   {
    "s": 2620,
    "eg": 2372.2,
    "fg": 2376.64,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 4.44,
-   "x": 1761.7,
-   "y": 310.9,
-   "nodata": true
+   "x": -201.0,
+   "y": 175.9
   },
   {
    "s": 2640,
    "eg": 2372.2,
    "fg": 2377.54,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 5.34,
-   "x": 1781.0,
-   "y": 307.2,
-   "nodata": true
+   "x": -185.8,
+   "y": 188.9
   },
   {
    "s": 2660,
    "eg": 2372.2,
    "fg": 2378.43,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 6.23,
-   "x": 1800.4,
-   "y": 303.5,
-   "nodata": true
+   "x": -170.6,
+   "y": 202.0
   },
   {
    "s": 2680,
    "eg": 2372.2,
    "fg": 2379.33,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 7.13,
-   "x": 1819.7,
-   "y": 299.7,
-   "nodata": true
+   "x": -155.4,
+   "y": 215.0
   },
   {
    "s": 2700,
    "eg": 2372.2,
    "fg": 2380.23,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 8.03,
-   "x": 1839.1,
-   "y": 295.7,
-   "nodata": true
+   "x": -140.7,
+   "y": 228.5
   },
   {
    "s": 2720,
    "eg": 2372.2,
    "fg": 2381.13,
-   "cut": 0.0,
+   "cut": 0,
    "fill": 8.93,
-   "x": 1858.5,
-   "y": 291.7,
-   "nodata": true
-  },
-  {
-   "s": 2740,
-   "eg": 2372.2,
-   "fg": 2382.03,
-   "cut": 0.0,
-   "fill": 9.83,
-   "x": 1877.8,
-   "y": 287.5,
-   "nodata": true
-  },
-  {
-   "s": 2760,
-   "eg": 2372.2,
-   "fg": 2382.92,
-   "cut": 0.0,
-   "fill": 10.72,
-   "x": 1897.2,
-   "y": 283.2,
-   "nodata": true
-  },
-  {
-   "s": 2780,
-   "eg": 2372.2,
-   "fg": 2383.82,
-   "cut": 0.0,
-   "fill": 11.62,
-   "x": 1916.5,
-   "y": 278.9,
-   "nodata": true
+   "x": -129.2,
+   "y": 244.8
   }
  ],
- "alignment_schematic": true,
+ "alignment_source": "printed curve geometry C-5/C-6/C-7 (PC/PT/R as noted)",
+ "alignment_schematic": false,
  "cds_center": [
-  2046.2499845811049,
-  247.84047016913033
+  -84.2,
+  259.1
  ],
  "cds_radius_ft": 50,
  "top_width_ft": 22,
@@ -1041,6 +1090,16 @@ const DATA = {
   "max_h_ft": 19.13,
   "len_lf": 145
  },
+ "hairpins": [
+  {
+   "sta": "10+40.05-11+00.45",
+   "note": "R50/R20 loop w/ retaining wall + rock slope"
+  },
+  {
+   "sta": "19+71.69-21+05.71",
+   "note": "R50, PC/PT printed; walls STA 19+12.47 & 20+57.47"
+  }
+ ],
  "phases": [
   {
    "id": 1,
@@ -1082,7 +1141,7 @@ const DATA = {
   {
    "id": 6,
    "name": "Base & Paving",
-   "detail": "3\" HMA over 4\" base, cul-de-sac bulb",
+   "detail": "3\" HMA over 4\" base, cul-de-sac bulb (STA 26+90\u201327+39)",
    "qty": "5,918 SY \u00b7 732.4 tons",
    "progress_to": 1.0
   }
@@ -1096,268 +1155,993 @@ const DATA = {
   "wall": "19.13' max @ STA 20+02.73"
  },
  "flags": [
-  "Horizontal alignment schematic \u2014 profile data exact, plan-shape approximate (pilot)",
+  "Horizontal alignment from printed curve data (PC/PT/R) \u2014 switchbacks + R50 bulb per sheets",
   "C-6/C-7 overlap conflict carried per cutfill_package.md (\u00b11-cell station offset flagged)",
-  "Cul-de-sac STA 26+90\u201329+14: no FG printed \u2014 bulb cut estimated (widest uncertainty)",
-  "EG beyond STA 22+00 held flat (no read available)",
-  "Quantities stamped = audited MC p50 values from cutfill_package.md, NOT recomputed from this surface",
-  "Model ends at STA 27+80 \u2014 last profile station; cul-de-sac (26+90\u201329+14) has no printed FG",
-  "STA 22+00\u201327+80: EG not read (held flat) \u2014 shown neutral, no cut/fill shading implied"
+  "Cul-de-sac bulb FG not printed (26+90\u201327+39) \u2014 grading estimated",
+  "EG beyond STA 22+00 held flat (no read available) \u2014 shown neutral",
+  "Quantities stamped = audited MC p50 values from cutfill_package.md, NOT recomputed from this surface"
  ]
 };
-const S = DATA.stations;               // {s,eg,fg,cut,fill,x,y}
+
+// DATA is read-only input. Display interpolation never writes into its station records.
+const S = DATA.stations;
 const N = S.length;
-const LAT = 100, LATN = 21;            // lateral extent / samples per cross-section
-const VSCALE = 2.2;                    // vertical exaggeration
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0b0d12);
-scene.fog = new THREE.Fog(0x0b0d12, 2600, 5200);
+const PH = DATA.phases;
+const VSCALE = 2.2;
+const DATUM = 2220;
+const LAT = 100;
+const ROAD_END = 2450;
+const STEP = 5;
+const HALF_ROAD = DATA.top_width_ft / 2;
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const mobile = matchMedia('(max-width:760px)');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const elevation = value => (value - DATUM) * VSCALE;
 
-const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 1, 12000);
-camera.position.set(-700, 420, 900);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-document.getElementById('app').appendChild(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(700, 60, 160);
-controls.enableDamping = true; controls.dampingFactor = .06;
-controls.maxPolarAngle = Math.PI*0.49; controls.minDistance=120; controls.maxDistance=3200;
-
-scene.add(new THREE.HemisphereLight(0x9db4d6, 0x201812, 1.05));
-const sun = new THREE.DirectionalLight(0xfff2dd, 1.5); sun.position.set(-600,900,500); scene.add(sun);
-
-// station -> world XZ (already computed server-side)
 const world = S.map(c => new THREE.Vector2(c.x, c.y));
-// perpendicular per station
-const perp = world.map((p,i)=>{
-  const a = world[Math.max(0,i-1)], b = world[Math.min(N-1,i+1)];
-  const d = new THREE.Vector2(b.x-a.x, b.y-a.y).normalize();
+const perp = world.map((p, i) => {
+  const a = world[Math.max(0, i - 1)], b = world[Math.min(N - 1, i + 1)];
+  const d = new THREE.Vector2(b.x - a.x, b.y - a.y).normalize();
   return new THREE.Vector2(-d.y, d.x);
 });
-const egY = S.map(c=>c.eg), fgY = S.map(c=>c.fg);
+const egY = S.map(c => c.eg);
+const fgY = S.map(c => c.fg);
 
-// ---- terrain surface (morphs EG -> corridor final grade) ----
-function crossFinal(i, o){ // final corridor surface at lateral offset o
-  const aw = Math.abs(o);
-  const fg = fgY[i], eg = egY[i];
-  if (aw <= 11) return fg;                       // 22' road top
-  const rise = (aw-11)/DATA.cut_slope;           // 1.5:1 cut, 2:1 on fill side handled below
-  const cutSide = eg > fg;                       // EG above FG => we cut into the hill
+
+
+const flagsList = document.getElementById('data-flags');
+for (const flag of DATA.flags) {
+  const li = document.createElement('li');
+  li.textContent = flag;
+  flagsList.appendChild(li);
+}
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d12);
+scene.fog = new THREE.FogExp2(0x0b0d12, .00024);
+const camera = new THREE.PerspectiveCamera(43, innerWidth / innerHeight, 2, 14000);
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:false, powerPreference:'high-performance'});
+} catch (error) {
+  document.getElementById('loading').hidden = true;
+  const message = document.getElementById('error');
+  message.hidden = false;
+  message.textContent = 'The 3D view requires WebGL. Try a browser with hardware acceleration enabled. The audited quantities and pilot data notes remain available below.';
+  throw error;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, mobile.matches ? 1.6 : 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.14;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;
+renderer.domElement.setAttribute('aria-label', 'Earthwork terrain. Drag to orbit, scroll to zoom, or use Follow road during playback.');
+renderer.domElement.setAttribute('tabindex', '0');
+document.getElementById('app').appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = .065;
+controls.rotateSpeed = .55;
+controls.zoomSpeed = .85;
+controls.panSpeed = .65;
+controls.minDistance = 100;
+controls.maxDistance = 4100;
+controls.minPolarAngle = .12;
+controls.maxPolarAngle = Math.PI * .485;
+controls.autoRotateSpeed = .16;
+// [data-driven framing supersedes] controls.target.set(800, 125, 210);
+
+scene.add(new THREE.HemisphereLight(0xb6cce5, 0x403126, 1.65));
+scene.add(new THREE.AmbientLight(0x7c8fa6, .23));
+const sun = new THREE.DirectionalLight(0xffe5bd, 3.05);
+sun.position.set(180, 1550, 950);
+sun.target.position.set(820, 80, 190);
+sun.castShadow = true;
+sun.shadow.mapSize.set(mobile.matches ? 1024 : 2048, mobile.matches ? 1024 : 2048);
+sun.shadow.camera.left = -1200;
+sun.shadow.camera.right = 1200;
+sun.shadow.camera.top = 850;
+sun.shadow.camera.bottom = -850;
+sun.shadow.camera.near = 50;
+sun.shadow.camera.far = 3300;
+sun.shadow.bias = -.00015;
+sun.shadow.normalBias = .65;
+sun.shadow.radius = 3;
+scene.add(sun, sun.target);
+const rim = new THREE.DirectionalLight(0x88b2d6, .62);
+rim.position.set(1600, 700, -1000);
+scene.add(rim);
+
+// Texture-free sky; a dark horizon merges into the exponential fog.
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(6500, 32, 16),
+  new THREE.ShaderMaterial({
+    side:THREE.BackSide, depthWrite:false, fog:false,
+    uniforms:{
+      low:{value:new THREE.Color('#0b0d12')},
+      high:{value:new THREE.Color('#233547')}
+    },
+    vertexShader:`
+      varying vec3 vSky;
+      void main(){
+        vSky = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      }`,
+    fragmentShader:`
+      uniform vec3 low;
+      uniform vec3 high;
+      varying vec3 vSky;
+      void main(){
+        vec3 d = normalize(vSky);
+        float h = pow(max(d.y,0.0),0.65);
+        vec3 c = mix(low,high,h);
+        float glow = pow(max(dot(d,normalize(vec3(-0.5,0.65,0.6))),0.0),18.0);
+        c += vec3(0.045,0.031,0.018)*glow;
+        gl_FragColor = vec4(c,1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
+      }`
+  })
+);
+sky.position.set(800, 0, 180);
+sky.frustumCulled = false;
+scene.add(sky);
+
+const groundMaterial = new THREE.MeshStandardMaterial({
+  color:0x1b232c, roughness:1, metalness:0,
+  transparent:true, depthWrite:false
+});
+groundMaterial.onBeforeCompile = shader => {
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec2 vDisc;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvDisc = position.xy;');
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', '#include <common>\nvarying vec2 vDisc;')
+    .replace('#include <color_fragment>', `
+      #include <color_fragment>
+      float radius = length(vDisc)/3600.0;
+      diffuseColor.a *= 1.0-smoothstep(0.30,1.0,radius);
+    `);
+};
+groundMaterial.customProgramCacheKey = () => 'fog-disc-v1';
+const ground = new THREE.Mesh(new THREE.CircleGeometry(3600, 128), groundMaterial);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(800, -34, 180);
+ground.receiveShadow = true;
+ground.renderOrder = -2;
+scene.add(ground);
+
+// Exact linear interpolation between printed stations: no cubic elevation overshoot.
+function readStation(s, out) {
+  s = clamp(s, S[0].s, S[N - 1].s);
+  const i = Math.min(N - 2, Math.floor((s - S[0].s) / 20));
+  const a = S[i], b = S[i + 1];
+  const t = (s - a.s) / (b.s - a.s);
+  out.s = s;
+  out.f = i + t;
+  out.x = lerp(a.x, b.x, t);
+  out.z = lerp(a.y, b.y, t);
+  out.eg = lerp(a.eg, b.eg, t);
+  out.fg = lerp(a.fg, b.fg, t);
+  const nx = lerp(perp[i].x, perp[i + 1].x, t);
+  const nz = lerp(perp[i].y, perp[i + 1].y, t);
+  const inv = 1 / Math.hypot(nx, nz);
+  out.nx = nx * inv;
+  out.nz = nz * inv;
+  let tw = Math.min(1, Math.min(s - S[0].s, S[N - 1].s - s) / 140);
+  if (s > 2200) tw *= Math.max(0, (2450 - s) / 250);
+  out.tw = tw;
+  out.nodata = s > 2200;
+  return out;
+}
+const rows = [];
+for (let s = S[0].s; s <= ROAD_END; s += STEP) rows.push(readStation(s, {}));
+const RN = rows.length;
+
+// The original corridor calculation is unchanged, evaluated at interpolated stations.
+function crossFinalAt(row, o) {
+  const aw = Math.abs(o), fg = row.fg, eg = row.eg;
+  if (aw <= HALF_ROAD) return fg;
   let v;
-  if (cutSide){                                  // slope rises from road edge until it daylights at EG
-    const r = (aw-11)/(cutSide? DATA.cut_slope : DATA.cut_slope);
-    v = Math.min(fg + r, eg);
-  } else {                                       // fill: slope descends from road edge down to EG
-    const r = (aw-11)/DATA.fill_slope;
-    v = Math.max(fg - r, eg);
-  }
-  const blendStart = 55, blendEnd = 80;
-  if (aw > blendEnd) return eg;
-  if (aw > blendStart){ const t=(aw-blendStart)/(blendEnd-blendStart); return v*(1-t)+eg*t; }
+  if (eg > fg) v = Math.min(fg + (aw - HALF_ROAD) / DATA.cut_slope, eg);
+  else v = Math.max(fg - (aw - HALF_ROAD) / DATA.fill_slope, eg);
+  if (aw > 80) return eg;
+  if (aw > 55) return lerp(v, eg, (aw - 55) / 25);
   return v;
 }
-const geo = new THREE.PlaneGeometry(1,1,N-1,LATN-1);
-const pos = geo.attributes.position;
-const colors = new Float32Array(pos.count*3);
-const cutCol = new THREE.Color(0xff6b6b), fillCol = new THREE.Color(0x4aa3ff), earthCol = new THREE.Color(0x7a5c48), grassCol = new THREE.Color(0x55603f);
-function placeVertices(morph){ // morph 0..1 EG->final
-  let k=0;
-  for(let j=0;j<LATN;j++){
-    const oRaw = -LAT + (2*LAT)*(j/(LATN-1));
-    for(let i=0;i<N;i++,k++){
-      let tw = Math.min(1, Math.min(i, N-1-i)*20/140); // 140-ft taper at each end
-      if (S[i].s > 2200) tw *= Math.max(0, (2450 - S[i].s)/250); // EG not surveyed past 22+00 — terrain ends, road ribbon continues
-      const o = oRaw*tw;
-      const p = world[i], pr = perp[i];
-      const x = p.x + pr.x*o, z = p.y + pr.y*o;
-      const eg = egY[i] + Math.abs(o)*0.008*Math.sin(i*0.35+o*0.02); // gentle existing crossfall
-      const fin = (tw<0.02)? eg : crossFinal(i,o);
-      const y = (eg*(1-morph) + fin*morph);
-      pos.setXYZ(k, x, y*VSCALE - 2220*VSCALE, z);
-      // color by cut/fill delta
-      // Neutral earth rendering — profile reads conflict (C-5 glm vs qwen); heat-map
-      // cut/fill shading would imply surface accuracy the data can't support.
-      // Quantities are stamped from the audited package instead.
-      const base = earthCol.clone().lerp(grassCol, Math.min(1,Math.abs(o)/LAT*1.4));
-      const col = base.clone();
-      if (S[i].nodata) col.lerp(new THREE.Color(0x4a4f5a), 0.5); // EG not read beyond 22+00
-      colors[k*3]=col.r; colors[k*3+1]=col.g; colors[k*3+2]=col.b;
+function crossFinal(i, o) {
+  return crossFinalAt(S[i], o);
+}
+function existingAt(row, o) {
+  return row.eg + Math.abs(o) * .008 * Math.sin(row.f * .35 + o * .02);
+}
+function finalAt(row, o) {
+  return row.tw < .02 ? existingAt(row, o) : crossFinalAt(row, o);
+}
+
+// Include the road edges explicitly, alongside a dense 2.5-foot lateral sampling.
+const offsets = [];
+for (let o = -LAT; o <= LAT; o += 2.5) offsets.push(o);
+offsets.push(-11, 11);
+offsets.sort((a, b) => a - b);
+const LATN = offsets.length;
+
+function gridIndices(nr, nc) {
+  const out = new Uint32Array((nr - 1) * (nc - 1) * 6);
+  let k = 0;
+  for (let i = 0; i < nr - 1; i++) {
+    for (let j = 0; j < nc - 1; j++) {
+      const a = i * nc + j, b = a + nc, c = a + 1, d = b + 1;
+      out[k++] = a; out[k++] = c; out[k++] = b;
+      out[k++] = b; out[k++] = c; out[k++] = d;
     }
   }
-  pos.needsUpdate = true;
-  geo.computeVertexNormals();
+  return out;
 }
-geo.setAttribute('color', new THREE.BufferAttribute(colors,3));
-placeVertices(0);
-const terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:.95, flatShading:true}));
+
+// Unnormalized, area-weighted vertex normals. With fixed X/Z and linearly
+// changing Y, these sums are themselves linear in morph. Interpolating the
+// sums BEFORE normalization gives exact current-surface normals without
+// allocating Vector3 objects or traversing triangles in the animation loop.
+function areaNormals(positions, indices) {
+  const normals = new Float32Array(positions.length);
+  for (let i = 0; i < indices.length; i += 3) {
+    const a = indices[i] * 3, b = indices[i + 1] * 3, c = indices[i + 2] * 3;
+    const ux = positions[b] - positions[a];
+    const uy = positions[b + 1] - positions[a + 1];
+    const uz = positions[b + 2] - positions[a + 2];
+    const vx = positions[c] - positions[a];
+    const vy = positions[c + 1] - positions[a + 1];
+    const vz = positions[c + 2] - positions[a + 2];
+    const nx = uy * vz - uz * vy;
+    const ny = uz * vx - ux * vz;
+    const nz = ux * vy - uy * vx;
+    normals[a] += nx; normals[a + 1] += ny; normals[a + 2] += nz;
+    normals[b] += nx; normals[b + 1] += ny; normals[b + 2] += nz;
+    normals[c] += nx; normals[c + 1] += ny; normals[c + 2] += nz;
+  }
+  return normals;
+}
+const morphSurfaces = [];
+function makeMorphGeometry(eg, fg, indices, colors) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(eg.slice(), 3).setUsage(THREE.DynamicDrawUsage));
+  g.setIndex(new THREE.BufferAttribute(indices, 1));
+  if (colors) g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  g.computeVertexNormals();
+  g.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+  // Conservative, stable bounds covering both endpoints; never recomputed per frame.
+  g.computeBoundingBox();
+  const fgBox = new THREE.Box3().setFromBufferAttribute(new THREE.BufferAttribute(fg, 3));
+  g.boundingBox.union(fgBox);
+  g.boundingSphere = g.boundingBox.getBoundingSphere(new THREE.Sphere());
+  morphSurfaces.push({
+    geometry:g, eg, fg,
+    position:g.attributes.position.array,
+    normal:g.attributes.normal.array,
+    normalEG:areaNormals(eg, indices),
+    normalFG:areaNormals(fg, indices)
+  });
+  return g;
+}
+
+const vertexCount = RN * LATN;
+const terrainEG = new Float32Array(vertexCount * 3);
+const terrainFG = new Float32Array(vertexCount * 3);
+const colors = new Float32Array(vertexCount * 3);
+const earthCol = new THREE.Color('#80624c');
+const grassCol = new THREE.Color('#66704a');
+const neutralCol = new THREE.Color('#626975');
+const scratchColor = new THREE.Color();
+for (let i = 0; i < RN; i++) {
+  const row = rows[i];
+  for (let j = 0; j < LATN; j++) {
+    const k = (i * LATN + j) * 3;
+    const o = offsets[j] * row.tw;
+    const x = row.x + row.nx * o, z = row.z + row.nz * o;
+    terrainEG[k] = terrainFG[k] = x;
+    terrainEG[k + 2] = terrainFG[k + 2] = z;
+    terrainEG[k + 1] = elevation(existingAt(row, o));
+    terrainFG[k + 1] = elevation(finalAt(row, o));
+    const broad = Math.sin(x * .039 + Math.sin(z * .071)) * .5
+      + Math.sin(z * .083 - x * .027) * .3
+      + Math.sin(x * .237 + z * .139) * .2;
+    const grass = clamp(Math.abs(o) / LAT * 1.35 + broad * .10, 0, 1);
+    scratchColor.copy(earthCol).lerp(grassCol, grass);
+    scratchColor.multiplyScalar(.94 + broad * .10);
+    // Intentionally neutral, never a cut/fill delta heat map.
+    if (row.nodata) scratchColor.lerp(neutralCol, .64);
+    colors[k] = scratchColor.r;
+    colors[k + 1] = scratchColor.g;
+    colors[k + 2] = scratchColor.b;
+  }
+}
+const geo = makeMorphGeometry(terrainEG, terrainFG, gridIndices(RN, LATN), colors);
+const terrainMaterial = new THREE.MeshStandardMaterial({
+  vertexColors:true, side:THREE.DoubleSide, roughness:.98, metalness:0, flatShading:false
+});
+const terrain = new THREE.Mesh(geo, terrainMaterial);
+terrain.name = 'Smooth EG → FG corridor';
+terrain.castShadow = true;
+terrain.receiveShadow = true;
 scene.add(terrain);
 
-// ---- road ribbon (appears in paving phase) ----
-const ROAD_END = 2440; // ribbon ends where terrain ends (EG not surveyed beyond 22+00)
-const roadN = S.findIndex(c=>c.s>ROAD_END); if (roadN<0) roadN = N;
-const roadGeo = new THREE.PlaneGeometry(1,1,roadN-1,1);
-{
-  const p = roadGeo.attributes.position; let k=0;
-  for(let j=0;j<2;j++){
-    const o = j===0? -11:11;
-    for(let i=0;i<roadN;i++,k++){
-      const pr=perp[i], w=world[i];
-      p.setXYZ(k, w.x+pr.x*o, (fgY[i]*VSCALE-2220*VSCALE)+0.4, w.y+pr.y*o);
-    }
+// A dark section-cut edge gives the corridor depth, without extending the survey.
+const perimeter = [];
+for (let i = 0; i < RN; i++) perimeter.push(i * LATN);
+for (let i = RN - 1; i >= 0; i--) perimeter.push(i * LATN + LATN - 1);
+perimeter.push(perimeter[0]);
+const skirtEG = new Float32Array(perimeter.length * 6);
+const skirtFG = new Float32Array(perimeter.length * 6);
+const skirtColors = new Float32Array(perimeter.length * 6);
+const skirtTop = new THREE.Color('#493f35');
+const skirtBottom = new THREE.Color('#171f27');
+for (let i = 0; i < perimeter.length; i++) {
+  const src = perimeter[i] * 3, k = i * 6;
+  for (let e = 0; e < 2; e++) {
+    const a = k + e * 3;
+    skirtEG[a] = skirtFG[a] = terrainEG[src];
+    skirtEG[a + 2] = skirtFG[a + 2] = terrainEG[src + 2];
+    skirtEG[a + 1] = e ? -33.5 : terrainEG[src + 1] - .05;
+    skirtFG[a + 1] = e ? -33.5 : terrainFG[src + 1] - .05;
+    const col = e ? skirtBottom : skirtTop;
+    skirtColors[a] = col.r; skirtColors[a + 1] = col.g; skirtColors[a + 2] = col.b;
   }
-  roadGeo.computeVertexNormals();
 }
-const road = new THREE.Mesh(roadGeo, new THREE.MeshStandardMaterial({color:0x565d6b, roughness:.85, side:THREE.DoubleSide, transparent:true, opacity:0}));
+const skirtIndex = new Uint32Array((perimeter.length - 1) * 6);
+for (let i = 0, k = 0; i < perimeter.length - 1; i++) {
+  const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+  skirtIndex[k++] = a; skirtIndex[k++] = c; skirtIndex[k++] = b;
+  skirtIndex[k++] = b; skirtIndex[k++] = c; skirtIndex[k++] = d;
+}
+const skirt = new THREE.Mesh(
+  makeMorphGeometry(skirtEG, skirtFG, skirtIndex, skirtColors),
+  new THREE.MeshStandardMaterial({vertexColors:true, roughness:1, side:THREE.DoubleSide})
+);
+skirt.name = 'Schematic section-cut display edge';
+skirt.castShadow = true;
+skirt.receiveShadow = true;
+scene.add(skirt);
+
+// Fine, derivative-filtered procedural grain; no image textures or external assets.
+function addGrain(material, amount, scale) {
+  material.onBeforeCompile = shader => {
+    shader.uniforms.grainAmount = {value:amount};
+    shader.uniforms.grainScale = {value:scale};
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vGrainPosition;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGrainPosition = position;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `
+        #include <common>
+        varying vec3 vGrainPosition;
+        uniform float grainAmount;
+        uniform float grainScale;
+      `)
+      .replace('#include <color_fragment>', `
+        #include <color_fragment>
+        vec2 gp = vGrainPosition.xz * grainScale;
+        float noise = fract(sin(dot(floor(gp),vec2(127.1,311.7)))*43758.5453);
+        float filterAmount = 1.0-smoothstep(0.5,2.0,length(fwidth(gp)));
+        diffuseColor.rgb *= 1.0+(noise-0.5)*grainAmount*filterAmount;
+      `);
+  };
+  material.customProgramCacheKey = () => 'procedural-grain-v1';
+}
+addGrain(terrainMaterial, .11, 1.8);
+
+function staticGeometry(positions, indices, uv) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  g.setIndex(indices instanceof Uint32Array ? new THREE.BufferAttribute(indices, 1) : indices);
+  if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+  return g;
+}
+function roadHeight(row, normalizedOffset) {
+  // Crown is a visual paving overlay; it does not alter the audited FG or terrain morph.
+  const base = finalAt(row, normalizedOffset * HALF_ROAD * row.tw);
+  const crown = .22 * (1 - normalizedOffset * normalizedOffset) * row.tw;
+  return elevation(base + crown) + .38;
+}
+const roadPositions = new Float32Array(RN * 9 * 3);
+for (let i = 0; i < RN; i++) {
+  const row = rows[i];
+  for (let j = 0; j < 9; j++) {
+    const q = j / 4 - 1, o = q * HALF_ROAD * row.tw, k = (i * 9 + j) * 3;
+    roadPositions[k] = row.x + row.nx * o;
+    roadPositions[k + 1] = roadHeight(row, q);
+    roadPositions[k + 2] = row.z + row.nz * o;
+  }
+}
+const asphalt = new THREE.MeshStandardMaterial({
+  color:'#343a43', roughness:.94, metalness:.025,
+  side:THREE.DoubleSide, transparent:true, opacity:0,
+  polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1
+});
+addGrain(asphalt, .25, 3.5);
+const road = new THREE.Mesh(staticGeometry(roadPositions, gridIndices(RN, 9)), asphalt);
+road.name = 'Crowned asphalt — ends at display taper';
+road.receiveShadow = true;
+road.renderOrder = 2;
 scene.add(road);
 
-// ---- retaining wall (fill side, STA 19+12.47-20+57.47) ----
+// Both painted edge lines are merged into one indexed BufferGeometry.
+const stripePositions = [], stripeIndices = [];
+for (const side of [-1, 1]) {
+  const first = stripePositions.length / 3;
+  for (let i = 0; i < RN; i++) {
+    const row = rows[i];
+    for (let j = 0; j < 2; j++) {
+      const oFull = side * (HALF_ROAD - .7) + (j ? .17 : -.17);
+      const q = oFull / HALF_ROAD, o = oFull * row.tw;
+      stripePositions.push(row.x + row.nx * o, roadHeight(row, q) + .045, row.z + row.nz * o);
+    }
+  }
+  const band = gridIndices(RN, 2);
+  for (let k = 0; k < band.length; k++) stripeIndices.push(first + band[k]);
+}
+const stripeMaterial = new THREE.MeshStandardMaterial({
+  color:'#e8e7da', roughness:.82, transparent:true, opacity:0,
+  side:THREE.DoubleSide, depthWrite:false,
+  polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2
+});
+const edgeLines = new THREE.Mesh(staticGeometry(stripePositions, stripeIndices), stripeMaterial);
+edgeLines.receiveShadow = true;
+edgeLines.renderOrder = 3;
+scene.add(edgeLines);
+
+// Continuous extruded wall: four connected ribbon surfaces plus two end caps.
+// The data supplies length, maximum height and its station, not a full height profile.
 const wallGrp = new THREE.Group();
-{
-  const i0 = S.findIndex(c=>c.s>=1912), i1 = S.findIndex(c=>c.s>=2058);
-  for(let i=i0;i<i1-1;i++){
-    const side = (egY[i] > fgY[i]) ? 1 : -1;      // wall retains the high (cut) side
-    const hH = Math.max(10, S[i].cut*1.2);          // wall height ~ retained depth
-    const a = world[i], b = world[i+1];
-    const segLen = Math.max(6, Math.hypot(b.x-a.x, b.y-a.y));
-    const g = new THREE.BoxGeometry(segLen, hH, 4);
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffa63e, roughness:.4, emissive:0xff7a00, emissiveIntensity:.6}));
-    const pr = perp[i], off = side*13.5;
-    const mx = (a.x+b.x)/2 + pr.x*off, mz = (a.y+b.y)/2 + pr.y*off;
-    m.position.set(mx, (S[i].fg + hH/2)*VSCALE-2220*VSCALE, mz);
-    m.rotation.y = -Math.atan2(b.y-a.y, b.x-a.x);  // align local X with path direction
-    wallGrp.add(m);
+wallGrp.name = 'Continuous retaining wall';
+const maxStationMatch = DATA.stamps.wall.match(/STA\s+(\d+)\+([\d.]+)/);
+const wallPeakStation = maxStationMatch
+  ? Number(maxStationMatch[1]) * 100 + Number(maxStationMatch[2])
+  : (DATA.wall.sta_start + DATA.wall.sta_end) / 2;
+const wallStations = [DATA.wall.sta_start, wallPeakStation, DATA.wall.sta_end];
+for (let s = DATA.wall.sta_start + 2; s < DATA.wall.sta_end; s += 2) wallStations.push(s);
+wallStations.sort((a, b) => a - b);
+const wallRows = wallStations.map(s => {
+  const row = readStation(s, {});
+  const u = s <= wallPeakStation
+    ? (s - DATA.wall.sta_start) / (wallPeakStation - DATA.wall.sta_start)
+    : (DATA.wall.sta_end - s) / (DATA.wall.sta_end - wallPeakStation);
+  const ease = clamp(u, 0, 1);
+  row.wallHeight = DATA.wall.max_h_ft * (.22 + .78 * ease * ease * (3 - 2 * ease));
+  return row;
+});
+function extrudedRibbon(list, left, right, bottomFn, topFn) {
+  const p = [], uv = [], ix = [];
+  // Clockwise cross-section as viewed along the alignment.
+  const corners = [[left,0],[right,0],[right,1],[left,1]];
+  for (let face = 0; face < 4; face++) {
+    const first = p.length / 3;
+    const c0 = corners[face], c1 = corners[(face + 1) % 4];
+    for (let i = 0; i < list.length; i++) {
+      const row = list[i], bottom = bottomFn(row), top = topFn(row);
+      for (let j = 0; j < 2; j++) {
+        const c = j ? c1 : c0, y = c[1] ? top : bottom;
+        p.push(row.x + row.nx * c[0], elevation(y), row.z + row.nz * c[0]);
+        uv.push(row.s - DATA.wall.sta_start, y - row.fg);
+      }
+    }
+    for (let i = 0; i < list.length - 1; i++) {
+      const a = first + i * 2, b = a + 1, c = a + 2, d = a + 3;
+      ix.push(a, c, b, b, c, d);
+    }
   }
-  { // floating label at wall midpoint
-    const iMid = S.findIndex(c=>c.s>=1985);
-    const pr = perp[iMid], w = world[iMid];
-    const cnv = document.createElement('canvas'); cnv.width=512; cnv.height=128;
-    const ctx = cnv.getContext('2d');
-    ctx.fillStyle = 'rgba(20,24,33,0.85)'; ctx.roundRect ? (ctx.beginPath(),ctx.roundRect(4,4,504,120,18),ctx.fill()) : ctx.fillRect(4,4,504,120);
-    ctx.strokeStyle = '#ffb86b'; ctx.lineWidth = 4; ctx.strokeRect(4,4,504,120);
-    ctx.fillStyle = '#ffb86b'; ctx.font = 'bold 44px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('RETAINING WALL 19.1\u2032 MAX', 256, 56);
-    ctx.fillStyle = '#e8eaf0'; ctx.font = '30px sans-serif';
-    ctx.fillText('STA 19+12 – 20+57 · 145 LF', 256, 100);
-    const tex = new THREE.CanvasTexture(cnv);
-    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-    spr.scale.set(150, 37.5, 1);
-    spr.position.set(w.x+pr.x*20, (fgY[iMid]+34)*VSCALE-2220*VSCALE, w.y+pr.y*20);
-    wallGrp.add(spr);
+  for (let end = 0; end < 2; end++) {
+    const row = list[end ? list.length - 1 : 0], first = p.length / 3;
+    const bottom = bottomFn(row), top = topFn(row);
+    for (const c of corners) {
+      const y = c[1] ? top : bottom;
+      p.push(row.x + row.nx * c[0], elevation(y), row.z + row.nz * c[0]);
+      uv.push(c[0], y - row.fg);
+    }
+    if (end) ix.push(first, first + 1, first + 2, first, first + 2, first + 3);
+    else ix.push(first, first + 2, first + 1, first, first + 3, first + 2);
   }
+  return staticGeometry(p, ix, uv);
 }
-wallGrp.visible = false; scene.add(wallGrp);
+const wallMaterial = new THREE.MeshStandardMaterial({
+  color:'#bd9162', roughness:.9, metalness:0,
+  emissive:'#a45d26', emissiveIntensity:.045, side:THREE.DoubleSide
+});
+wallMaterial.onBeforeCompile = shader => {
+  shader.vertexShader = shader.vertexShader
+    .replace('#include <common>', '#include <common>\nvarying vec2 vMasonry;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMasonry = uv;');
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', '#include <common>\nvarying vec2 vMasonry;')
+    .replace('#include <color_fragment>', `
+      #include <color_fragment>
+      float course = floor(vMasonry.y/1.5);
+      vec2 brick = vec2(vMasonry.x/4.0+mod(course,2.0)*0.5,vMasonry.y/1.5);
+      vec2 edge = min(fract(brick),1.0-fract(brick));
+      vec2 aa = max(fwidth(brick),vec2(0.001));
+      vec2 joint = 1.0-smoothstep(vec2(0.009),vec2(0.009)+aa,edge);
+      float mortar = max(joint.x,joint.y);
+      float variation = fract(sin(dot(floor(brick),vec2(127.1,311.7)))*43758.5453);
+      diffuseColor.rgb *= (0.93+variation*0.12)*(1.0-mortar*0.25);
+    `);
+};
+wallMaterial.customProgramCacheKey = () => 'continuous-masonry-v1';
+const wallFace = new THREE.Mesh(
+  extrudedRibbon(wallRows, 11.9, 15.1, r => r.fg, r => r.fg + r.wallHeight - .55),
+  wallMaterial
+);
+wallFace.name = 'Wall face — schematic height envelope';
+wallFace.castShadow = wallFace.receiveShadow = true;
+const wallCap = new THREE.Mesh(
+  extrudedRibbon(wallRows, 11.45, 15.55, r => r.fg + r.wallHeight - .55, r => r.fg + r.wallHeight),
+  new THREE.MeshStandardMaterial({color:'#e1b57d', roughness:.7, metalness:.035, side:THREE.DoubleSide})
+);
+wallCap.name = 'Continuous wall cap';
+wallCap.castShadow = wallCap.receiveShadow = true;
+wallGrp.add(wallFace, wallCap);
 
-// ---- utilities (glowing centerline + rock ditches) ----
-function polyLine(offset, color, yFn, dashed){
-  const pts=[];
-  for(let i=0;i<N;i++){
-    const pr=perp[i], w=world[i];
-    pts.push(new THREE.Vector3(w.x+pr.x*offset, yFn(i)+0.8, w.y+pr.y*offset));
-  }
-  const g = new THREE.BufferGeometry().setFromPoints(pts);
-  return new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:true, opacity:.95}));
+function makeLabel(line1, line2, accent, width = 210) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 240;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(12,19,28,0.91)';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(4, 4, 1016, 232, 24);
+  else ctx.rect(4, 4, 1016, 232);
+  ctx.fill();
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = accent;
+  ctx.fillRect(35, 49, 7, 61);
+  ctx.font = '600 47px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(line1, 530, 99, 910);
+  ctx.fillStyle = '#b9c6d6';
+  ctx.font = '34px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+  ctx.fillText(line2, 512, 170, 930);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map:texture, transparent:true, depthTest:false, depthWrite:false, toneMapped:false
+  }));
+  sprite.scale.set(width, width * 240 / 1024, 1);
+  sprite.renderOrder = 20;
+  return sprite;
 }
+const peak = readStation(wallPeakStation, {});
+const wallLabel = makeLabel('RETAINING WALL 19.1\u2032 MAX', 'STA 19+12 – 20+57 · 145 LF', '#ffb86b', 222);
+wallLabel.position.set(
+  peak.x + peak.nx * 27,
+  elevation(peak.fg + DATA.wall.max_h_ft) + 67,
+  peak.z + peak.nz * 27
+);
+wallGrp.add(wallLabel);
+const leaderGeometry = new THREE.BufferGeometry().setFromPoints([
+  new THREE.Vector3(peak.x + peak.nx * 13.5, elevation(peak.fg + DATA.wall.max_h_ft) + 1, peak.z + peak.nz * 13.5),
+  new THREE.Vector3(wallLabel.position.x, wallLabel.position.y - 25, wallLabel.position.z)
+]);
+const wallLeader = new THREE.Line(leaderGeometry, new THREE.LineBasicMaterial({
+  color:'#e8b175', transparent:true, opacity:.7, depthTest:false, depthWrite:false
+}));
+wallLeader.renderOrder = 19;
+wallGrp.add(wallLeader);
+wallGrp.visible = false;
+scene.add(wallGrp);
+
+// Utilities are schematic surface traces, not an assertion of surveyed pipe inverts.
+// Three traces share a single BufferGeometry and terminate with the modeled surface.
 const utilGrp = new THREE.Group();
-utilGrp.add(polyLine(0, 0x3ddc97, i=>fgY[i]-2.5));
-utilGrp.add(polyLine(-16, 0x3ddc97, i=>fgY[i]-1.5));
-utilGrp.add(polyLine(16, 0x3ddc97, i=>fgY[i]-1.5));
-utilGrp.visible=false; scene.add(utilGrp);
-
-// ---- cul-de-sac bulb ----
-const cdsGrp = new THREE.Group();
-{
-  const c = DATA.cds_center;
-  const ring = new THREE.Mesh(new THREE.RingGeometry(28,50,48), new THREE.MeshStandardMaterial({color:0x565d6b, side:THREE.DoubleSide, transparent:true, opacity:0}));
-  ring.rotation.x = -Math.PI/2;
-  ring.position.set(c[0], (fgY[N-1]*VSCALE-2220*VSCALE)+0.5, c[1]);
-  cdsGrp.add(ring);
-}
-cdsGrp.visible=false; scene.add(cdsGrp);
-
-// ---- lot pads ----
-const lotsGrp = new THREE.Group();
-{
-  const offs = [[-60,0.22],[60,0.28],[-58,0.5],[62,0.55]];
-  for(let i=0;i<4;i++){
-    const si = Math.floor(N*(0.2+i*0.2));
-    const pr=perp[si], w=world[si], o=offs[i][0];
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(70,2,60), new THREE.MeshStandardMaterial({color:0x6a5a45, roughness:1, transparent:true, opacity:0.0}));
-    pad.position.set(w.x+pr.x*o, (fgY[si]-1.5)*VSCALE-2220*VSCALE, w.y+pr.y*o);
-    pad.rotation.y = Math.atan2(perp[si].y, perp[si].x);
-    lotsGrp.add(pad); pad.userData.targetOp = offs[i][1];
+const utilityPositions = [], utilityIndices = [];
+for (const offset of [0, -16, 16]) {
+  const first = utilityPositions.length / 3;
+  for (const row of rows) {
+    for (let side = 0; side < 2; side++) {
+      const o = (offset + (side ? .25 : -.25)) * row.tw;
+      const roadCrown = offset === 0 ? .22 * row.tw : 0;
+      utilityPositions.push(
+        row.x + row.nx * o,
+        elevation(finalAt(row, o) + roadCrown) + .92,
+        row.z + row.nz * o
+      );
+    }
   }
+  const band = gridIndices(RN, 2);
+  for (let i = 0; i < band.length; i++) utilityIndices.push(first + band[i]);
 }
-lotsGrp.visible=false; scene.add(lotsGrp);
+const utilityMaterial = new THREE.MeshStandardMaterial({
+  color:'#50dca1', emissive:'#27b877', emissiveIntensity:.65,
+  roughness:.65, side:THREE.DoubleSide, transparent:true, opacity:.95, depthWrite:false
+});
+const utilityMesh = new THREE.Mesh(staticGeometry(utilityPositions, utilityIndices), utilityMaterial);
+utilityMesh.renderOrder = 4;
+utilGrp.add(utilityMesh);
+utilGrp.visible = false;
+scene.add(utilGrp);
 
-// ---- phase engine ----
-const PH = DATA.phases;
+// Keep the original cul-de-sac phase/debug object. Its original zero-opacity
+// surface remains unrendered: no unsupported pavement beyond the display taper.
+const cdsGrp = new THREE.Group();
+const cdsRing = new THREE.Mesh(
+  new THREE.RingGeometry(28, DATA.cds_radius_ft, 64),
+  new THREE.MeshStandardMaterial({color:0x565d6b, side:THREE.DoubleSide, transparent:true, opacity:0, depthWrite:false})
+);
+cdsRing.rotation.x = -Math.PI / 2;
+cdsRing.position.set(DATA.cds_center[0], elevation(fgY[N - 1]) + .5, DATA.cds_center[1]);
+cdsRing.visible = false;
+cdsGrp.add(cdsRing);
+cdsGrp.visible = false;
+scene.add(cdsGrp);
+
+// Preserve the four conceptual pad reveals, now draped over the morphing terrain.
+const lotsGrp = new THREE.Group();
+const padOffsets = [-60, 60, -58, 62];
+const padOpacities = [.22, .28, .5, .55];
+for (let lot = 0; lot < 4; lot++) {
+  const station = S[Math.floor(N * (.2 + lot * .2))].s;
+  const eg = new Float32Array(17 * 13 * 3);
+  const fg = new Float32Array(eg.length);
+  for (let i = 0; i < 17; i++) {
+    const row = readStation(clamp(station - 35 + i * 70 / 16, 800, ROAD_END), {});
+    for (let j = 0; j < 13; j++) {
+      const o = clamp(padOffsets[lot] - 27 + j * 54 / 12, -LAT * row.tw * .94, LAT * row.tw * .94);
+      const k = (i * 13 + j) * 3;
+      eg[k] = fg[k] = row.x + row.nx * o;
+      eg[k + 2] = fg[k + 2] = row.z + row.nz * o;
+      eg[k + 1] = elevation(existingAt(row, o)) + .48;
+      fg[k + 1] = elevation(finalAt(row, o)) + .48;
+    }
+  }
+  const pad = new THREE.Mesh(
+    makeMorphGeometry(eg, fg, gridIndices(17, 13)),
+    new THREE.MeshStandardMaterial({
+      color:'#a99a71', roughness:1, side:THREE.DoubleSide,
+      transparent:true, opacity:0, depthWrite:false,
+      polygonOffset:true, polygonOffsetFactor:-1, polygonOffsetUnits:-1
+    })
+  );
+  pad.userData.targetOp = padOpacities[lot];
+  pad.receiveShadow = true;
+  pad.renderOrder = 1;
+  lotsGrp.add(pad);
+}
+lotsGrp.visible = false;
+scene.add(lotsGrp);
+
+// Restrained survey-limit callout, kept independent of construction phase.
+const limit = readStation(2200, {});
+const limitLabel = makeLabel('EG READ LIMIT · 22+00', 'Neutral held-flat continuation', '#a8b7c8', 175);
+limitLabel.position.set(limit.x + limit.nx * 140, elevation(limit.eg) + 37, limit.z + limit.nz * 140);
+scene.add(limitLabel);
+
+// Phase semantics: same six phases and the same cumulative EG → FG morph.
 let phaseIdx = 0, phaseT = 1, playing = false;
-function morphFor(idx, t){
-  // cumulative morph: mass excavation drives cut morph; embankment drives fill morph.
-  // Simplify: single morph that completes across phases 2-3.
+let currentMorph = -1, uiPhase = -1;
+let followRoad = false; // default OFF — framing shot first, opt in via Follow road / PLAY
+let idleOrbit = !reducedMotion;
+let scrubbing = false;
+let displayT = 1;
+const phaseButtons = [];
+const ui = {
+  number:document.getElementById('ph-n'),
+  name:document.getElementById('ph-name'),
+  detail:document.getElementById('ph-detail'),
+  qty:document.getElementById('ph-qty'),
+  fill:document.getElementById('trackfill'),
+  thumb:document.getElementById('trackthumb'),
+  progress:document.getElementById('phase-progress'),
+  track:document.getElementById('track'),
+  play:document.getElementById('play'),
+  follow:document.getElementById('follow'),
+  state:document.getElementById('view-state')
+};
+
+function morphFor(idx, t) {
   const m2 = PH[1], m3 = PH[2];
   if (idx < 1) return 0;
-  if (idx === 1) return (t/1)*(m2.progress_to/0.58);
-  if (idx === 2) return (m2.progress_to/0.58) + (t)*( (m3.progress_to-m2.progress_to)/0.58 );
+  if (idx === 1) return t * (m2.progress_to / .58);
+  if (idx === 2) return m2.progress_to / .58 + t * ((m3.progress_to - m2.progress_to) / .58);
   return 1;
 }
-function applyPhase(idx, t){
-  placeVertices(morphFor(idx,t));
-  road.material.opacity = (idx>=5)? Math.min(1,t*1.5) : (idx===4? t*0.15:0);
-  wallGrp.visible = idx>=2; 
-  utilGrp.visible = idx>=3;
-  cdsGrp.visible = idx>=4;
-  lotsGrp.visible = idx>=2;
-  if (idx>=2) lotsGrp.children.forEach(m=>m.material.opacity = (idx===2? t*0.3: m.userData.targetOp));
-  // UI
-  const ph = PH[idx];
-  document.getElementById('ph-n').textContent = ph.id;
-  document.getElementById('ph-name').textContent = ph.name;
-  document.getElementById('ph-detail').textContent = ph.detail;
-  document.getElementById('ph-qty').textContent = ph.qty;
-  document.getElementById('trackfill').style.width = (ph.progress_to*100).toFixed(0)+'%';
-  document.querySelectorAll('#phasebtns button').forEach((b,i)=>{
-    b.classList.toggle('on', i===idx); b.classList.toggle('done', i<idx);
-  });
+function placeVertices(morph) {
+  if (Math.abs(morph - currentMorph) < 1e-8) return;
+  currentMorph = morph;
+  for (let m = 0; m < morphSurfaces.length; m++) {
+    const surface = morphSurfaces[m];
+    const p = surface.position, normal = surface.normal;
+    const eg = surface.eg, fg = surface.fg, a = surface.normalEG, b = surface.normalFG;
+    for (let k = 0; k < p.length; k += 3) {
+      p[k + 1] = eg[k + 1] + (fg[k + 1] - eg[k + 1]) * morph;
+      const nx = a[k] + (b[k] - a[k]) * morph;
+      const ny = a[k + 1] + (b[k + 1] - a[k + 1]) * morph;
+      const nz = a[k + 2] + (b[k + 2] - a[k + 2]) * morph;
+      const length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+      if (length > 1e-12) {
+        const inv = 1 / length;
+        normal[k] = nx * inv;
+        normal[k + 1] = ny * inv;
+        normal[k + 2] = nz * inv;
+      } else {
+        normal[k] = 0; normal[k + 1] = 1; normal[k + 2] = 0;
+      }
+    }
+    surface.geometry.attributes.position.needsUpdate = true;
+    surface.geometry.attributes.normal.needsUpdate = true;
+  }
+  renderer.shadowMap.needsUpdate = true;
 }
-function gotoPhase(i, t=1){ phaseIdx=Math.max(0,Math.min(PH.length-1,i)); phaseT=t; applyPhase(phaseIdx,phaseT); }
+function updateProgress() {
+  const pct = Math.round(displayT * 100);
+  ui.fill.style.transform = 'scaleX(' + displayT.toFixed(4) + ')';
+  ui.thumb.style.left = (displayT * 100).toFixed(2) + '%';
+  ui.progress.textContent = pct + '%';
+  ui.track.setAttribute('aria-valuenow', pct);
+}
+function updatePhaseText(idx) {
+  if (uiPhase === idx) return;
+  uiPhase = idx;
+  const ph = PH[idx];
+  ui.number.textContent = ph.id;
+  ui.name.textContent = ph.name;
+  ui.detail.textContent = ph.detail;
+  ui.qty.textContent = ph.qty;
+  ui.qty.classList.remove('phase-change');
+  void ui.qty.offsetWidth;
+  ui.qty.classList.add('phase-change');
+  ui.state.textContent = idx === 0 ? 'EXISTING GROUND' : idx < 3 ? 'GRADING IN PROGRESS' : idx < 5 ? 'FINISHED CORRIDOR' : 'PAVED CORRIDOR';
+  for (let i = 0; i < phaseButtons.length; i++) {
+    phaseButtons[i].classList.toggle('on', i === idx);
+    phaseButtons[i].classList.toggle('done', i < idx);
+    phaseButtons[i].setAttribute('aria-pressed', i === idx ? 'true' : 'false');
+  }
+  renderer.shadowMap.needsUpdate = true;
+}
+function applyPhase(idx, t, refreshProgress = true) {
+  idx = clamp(Math.trunc(idx), 0, PH.length - 1);
+  t = clamp(t, 0, 1);
+  displayT = t;
+  placeVertices(morphFor(idx, t));
+  road.material.opacity = idx >= 5 ? Math.min(1, t * 1.5) : idx === 4 ? t * .15 : 0;
+  road.visible = road.material.opacity > .0001;
+  stripeMaterial.opacity = idx >= 5 ? Math.min(1, t * 1.5) * .94 : 0;
+  edgeLines.visible = stripeMaterial.opacity > .0001;
+  wallGrp.visible = idx >= 2;
+  utilGrp.visible = idx >= 3;
+  cdsGrp.visible = idx >= 4;
+  lotsGrp.visible = idx >= 2;
+  if (idx >= 2) {
+    for (let i = 0; i < lotsGrp.children.length; i++) {
+      const pad = lotsGrp.children[i];
+      pad.material.opacity = idx === 2 ? t * .3 : pad.userData.targetOp;
+    }
+  }
+  updatePhaseText(idx);
+  if (refreshProgress) updateProgress();
+}
+function gotoPhase(i, t = 1) {
+  phaseIdx = clamp(Math.trunc(i), 0, PH.length - 1);
+  phaseT = clamp(t, 0, 1);
+  applyPhase(phaseIdx, phaseT);
+}
 
-// phase buttons
-const btns = document.getElementById('phasebtns');
-PH.forEach((ph,i)=>{
-  const b=document.createElement('button'); b.textContent=ph.name.split(' ')[0]; b.onclick=()=>gotoPhase(i,1);
-  btns.appendChild(b);
+const buttons = document.getElementById('phasebtns');
+for (let i = 0; i < PH.length; i++) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.textContent = PH[i].name.split(' ')[0];
+  button.title = PH[i].name;
+  button.setAttribute('aria-label', 'Phase ' + PH[i].id + ': ' + PH[i].name);
+  button.addEventListener('click', () => gotoPhase(i, 1));
+  phaseButtons.push(button);
+  buttons.appendChild(button);
+}
+
+function scrubAt(clientX) {
+  const rect = ui.track.getBoundingClientRect();
+  gotoPhase(phaseIdx, clamp((clientX - rect.left) / rect.width, 0, 1));
+}
+ui.track.addEventListener('pointerdown', event => {
+  event.preventDefault();
+  ui.track.focus({preventScroll:true});
+  scrubbing = true;
+  ui.track.setPointerCapture(event.pointerId);
+  scrubAt(event.clientX);
 });
-// scrub
-const track = document.getElementById('track');
-track.addEventListener('click', e=>{
-  const r = track.getBoundingClientRect();
-  const t = (e.clientX-r.left)/r.width;
-  gotoPhase(phaseIdx, t);
+ui.track.addEventListener('pointermove', event => {
+  if (scrubbing) scrubAt(event.clientX);
 });
-document.getElementById('play').onclick = ()=>{
-  if (playing){ playing=false; document.getElementById('play').textContent='▶ PLAY INSTALL SEQUENCE'; return; }
-  playing=true; gotoPhase(0,0.01);
-  document.getElementById('play').textContent='⏸ PLAYING…';
-};
-let last = performance.now();
-function tick(now){
-  const dt = (now-last)/1000; last = now;
-  if (playing){
-    phaseT += dt*0.35;
-    if (phaseT>=1){ phaseT=0; phaseIdx++; if (phaseIdx>=PH.length){ phaseIdx=PH.length-1; phaseT=1; playing=false; document.getElementById('play').textContent='▶ REPLAY SEQUENCE'; } }
-    applyPhase(phaseIdx, Math.min(1,phaseT));
+ui.track.addEventListener('pointerup', event => {
+  if (scrubbing) scrubAt(event.clientX);
+  scrubbing = false;
+});
+ui.track.addEventListener('pointercancel', () => { scrubbing = false; });
+ui.track.addEventListener('lostpointercapture', () => { scrubbing = false; });
+ui.track.addEventListener('keydown', event => {
+  let next = phaseT;
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next -= .025;
+  else if (event.key === 'ArrowRight' || event.key === 'ArrowUp') next += .025;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = 1;
+  else return;
+  event.preventDefault();
+  gotoPhase(phaseIdx, next);
+});
+
+function setFollow(value) {
+  followRoad = value;
+  ui.follow.setAttribute('aria-pressed', value ? 'true' : 'false');
+}
+setFollow(followRoad);
+ui.follow.addEventListener('click', () => setFollow(!followRoad));
+ui.play.addEventListener('click', () => {
+  if (playing) {
+    playing = false;
+    ui.play.textContent = '▶ PLAY INSTALL SEQUENCE';
+    return;
+  }
+  playing = true;
+  idleOrbit = false;
+  gotoPhase(0, .01);
+  ui.play.textContent = '⏸ PLAYING…';
+});
+
+// Any deliberate interaction stops idle orbit. Direct camera manipulation also
+// releases Follow road, so the flythrough never fights the user's gestures.
+document.addEventListener('pointerdown', () => { idleOrbit = false; }, {passive:true});
+document.addEventListener('keydown', () => { idleOrbit = false; });
+renderer.domElement.addEventListener('wheel', () => { idleOrbit = false; }, {passive:true});
+controls.addEventListener('start', () => {
+  idleOrbit = false;
+  if (playing && followRoad) setFollow(false);
+});
+
+function overview() {
+  const aspect = innerWidth / innerHeight;
+  if (mobile.matches) {
+    const scale = clamp(.65 / aspect, 1, 1.55);
+    // [data-driven framing supersedes] controls.target.set(800, 145, 200);
+    // [data-driven framing supersedes] camera.position.set(...);
+
+// ---- data-driven camera framing (works for any alignment) ----
+(function(){
+  let minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9,maxE=-1e9,minE=1e9;
+  for(const c of S){ minX=Math.min(minX,c.x); maxX=Math.max(maxX,c.x); minZ=Math.min(minZ,c.y); maxZ=Math.max(maxZ,c.y); minE=Math.min(minE,c.eg); maxE=Math.max(maxE,c.fg); }
+  const cx=(minX+maxX)/2, cz=(minZ+maxZ)/2;
+  const span=Math.max(maxX-minX, maxZ-minZ);
+  window.__fitCam = function(){ 
+    const dist=span*1.15;
+    camera.position.set(cx - dist*0.9, (maxE-minE)*2.2 + dist*0.75, cz + dist*0.95);
+    controls.target.set(cx, (minE-2220)*2.2 + 40, cz);
+    controls.update();
+  };
+  window.__fitCam();
+})();
+  } else {
+    // [data-driven framing supersedes] controls.target.set(800, 125, 210);
+    const scale = Math.max(1, 1.45 / aspect);
+    // [data-driven framing supersedes] camera.position.set(...);
   }
   controls.update();
-  renderer.render(scene,camera);
+}
+document.getElementById('overview').addEventListener('click', () => {
+  if (playing) setFollow(false);
+  overview();
+  idleOrbit = !reducedMotion;
+});
+function resize() {
+  camera.aspect = innerWidth / innerHeight;
+  camera.setViewOffset(innerWidth, innerHeight, 0, innerHeight * (mobile.matches ? .16 : .035), innerWidth, innerHeight);
+  camera.updateProjectionMatrix();
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile.matches ? 1.6 : 2));
+  renderer.setSize(innerWidth, innerHeight);
+}
+resize();
+overview();
+addEventListener('resize', resize);
+
+// All flythrough vectors and sample records are reused; no per-frame scene objects.
+const flySample = {};
+const lookSample = {};
+const desiredCamera = new THREE.Vector3();
+const desiredTarget = new THREE.Vector3();
+function flythrough(dt) {
+  const progress = clamp((phaseIdx + phaseT) / PH.length, 0, 1);
+  const station = lerp(840, ROAD_END - 75, progress);
+  readStation(station, flySample);
+  readStation(Math.min(ROAD_END, station + 145), lookSample);
+  const m = Math.max(0, currentMorph);
+  const h = elevation(lerp(existingAt(flySample, 0), finalAt(flySample, 0), m));
+  const aheadH = elevation(lerp(existingAt(lookSample, 0), finalAt(lookSample, 0), m));
+  const distance = mobile.matches ? 1.4 : 1;
+  desiredCamera.set(
+    flySample.x - flySample.nz * 230 * distance - flySample.nx * 235 * distance,
+    h + 195 * distance,
+    flySample.z + flySample.nx * 230 * distance - flySample.nz * 235 * distance
+  );
+  desiredTarget.set(lookSample.x, aheadH + 8, lookSample.z);
+  const alpha = 1 - Math.exp(-dt * 1.65);
+  camera.position.lerp(desiredCamera, alpha);
+  controls.target.lerp(desiredTarget, alpha);
+}
+
+let last = performance.now();
+let nextUIUpdate = 0;
+let contextLost = false;
+renderer.domElement.addEventListener('webglcontextlost', event => {
+  event.preventDefault();
+  contextLost = true;
+  const message = document.getElementById('error');
+  message.textContent = 'The 3D graphics context was interrupted. Waiting for it to recover…';
+  message.hidden = false;
+});
+renderer.domElement.addEventListener('webglcontextrestored', () => {
+  contextLost = false;
+  renderer.shadowMap.needsUpdate = true;
+  document.getElementById('error').hidden = true;
+});
+document.addEventListener('visibilitychange', () => { last = performance.now(); });
+
+function tick(now) {
+  const dt = Math.min((now - last) / 1000, .05);
+  last = now;
+  if (!document.hidden && !contextLost) {
+    if (playing && !scrubbing) {
+      phaseT += dt * .35;
+      if (phaseT >= 1) {
+        phaseT -= 1;
+        phaseIdx++;
+        if (phaseIdx >= PH.length) {
+          phaseIdx = PH.length - 1;
+          phaseT = 1;
+          playing = false;
+          ui.play.textContent = '▶ REPLAY SEQUENCE';
+        }
+      }
+      applyPhase(phaseIdx, phaseT, false);
+    }
+    // DOM progress is throttled, separate from the allocation-free geometry loop.
+    if (now >= nextUIUpdate) {
+      updateProgress();
+      nextUIUpdate = now + 100;
+    }
+    const following = playing && followRoad;
+    controls.autoRotate = idleOrbit && !playing && !reducedMotion;
+    controls.enableDamping = !following;
+    if (following) flythrough(dt);
+    controls.update(dt);
+    renderer.render(scene, camera);
+  }
   requestAnimationFrame(tick);
 }
-applyPhase(0,1);
+
+applyPhase(0, 1);
+renderer.shadowMap.needsUpdate = true;
+renderer.render(scene, camera);
+const loading = document.getElementById('loading');
+loading.style.opacity = '0';
+setTimeout(() => { loading.hidden = true; }, 450);
 requestAnimationFrame(tick);
-addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
-window.__viz = {wallGrp, lotsGrp, utilGrp, cdsGrp, terrain, road, gotoPhase, applyPhase, S, world, perp, egY, fgY};
+
+window.__viz = {
+  wallGrp, lotsGrp, utilGrp, cdsGrp, terrain, road,
+  gotoPhase, applyPhase, S, world, perp, egY, fgY,
+  scene, camera, renderer, controls, edgeLines, skirt,
+  morphFor, placeVertices, rows, VSCALE,
+  get phaseIdx(){ return phaseIdx; },
+  get phaseT(){ return phaseT; },
+  get playing(){ return playing; },
+  get followRoad(){ return followRoad; },
+  setFollow
+};
 </script>
-<footer style="position:fixed;bottom:6px;left:50%;transform:translateX(-50%);color:#5b6274;font-size:10.5px;z-index:5">IVR Excavation · Earthwork Visualizer pilot · profile data from audited takeoff package · for client presentation</footer>
 </body>
 </html>
