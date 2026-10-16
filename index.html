@@ -1067,13 +1067,13 @@ scene.background = new THREE.Color(0x0b0d12);
 scene.fog = new THREE.Fog(0x0b0d12, 2600, 5200);
 
 const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 1, 12000);
-camera.position.set(-1020, 430, 700);
+camera.position.set(-760, 470, 880);
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 document.getElementById('app').appendChild(renderer.domElement);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(-120, 80, 80);
+controls.target.set(-380, 265, 60);
 controls.enableDamping = true; controls.dampingFactor = .06;
 controls.maxPolarAngle = Math.PI*0.49; controls.minDistance=120; controls.maxDistance=3200;
 
