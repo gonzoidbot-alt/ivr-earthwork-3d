@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IVR · Diamond Heights — Earthwork 3D Visualizer</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{background:#0b0d12;color:#e8eaf0;font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+  .hdr{position:fixed;top:0;left:0;right:0;padding:14px 20px;background:linear-gradient(180deg,rgba(11,13,18,.92),rgba(11,13,18,0));pointer-events:none;z-index:10}
+  .hdr h1{font-size:18px;letter-spacing:.3px}
+  .hdr h1 b{color:#ffb86b}
+  .hdr p{color:#8b93a7;font-size:12.5px;margin-top:2px}
+  .hdr .chip{display:inline-block;background:#141821;border:1px solid #232a38;border-radius:6px;padding:1px 8px;font-size:11px;color:#8b93a7;margin-right:6px}
+  /* phase panel */
+  .panel{position:fixed;left:20px;bottom:20px;width:340px;max-width:calc(100vw - 40px);background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:16px 18px;z-index:10;backdrop-filter:blur(6px)}
+  .phase-title{display:flex;align-items:baseline;gap:10px}
+  .phase-title .n{font-size:26px;font-weight:800;color:#ffb86b}
+  .phase-title h2{font-size:16px}
+  .phase-detail{color:#8b93a7;font-size:12.5px;margin-top:4px;min-height:34px}
+  .qty{display:inline-block;margin-top:8px;background:rgba(255,184,107,.1);border:1px solid rgba(255,184,107,.35);color:#ffb86b;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:700;letter-spacing:.3px}
+  .track{margin-top:14px;height:8px;background:#1a1f2b;border-radius:6px;position:relative;cursor:pointer}
+  .track .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#ffb86b,#3ddc97)}
+  .phases{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+  .phases button{flex:1;min-width:44px;background:#1a1f2b;border:1px solid #232a38;color:#8b93a7;border-radius:8px;padding:6px 2px;font-size:10.5px;cursor:pointer}
+  .phases button.on{background:rgba(255,184,107,.15);border-color:#ffb86b;color:#ffb86b}
+  .phases button.done{color:#3ddc97;border-color:rgba(61,220,151,.4)}
+  .play{margin-top:12px;width:100%;background:#ffb86b;color:#141821;border:none;border-radius:9px;padding:10px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.4px}
+  /* legend */
+  .legend{position:fixed;right:20px;top:70px;background:rgba(20,24,33,.9);border:1px solid #232a38;border-radius:12px;padding:12px 14px;z-index:10;font-size:12px}
+  .legend div{display:flex;align-items:center;gap:8px;margin:5px 0;color:#c8cddc}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block}
+  .stamp{position:fixed;right:20px;bottom:20px;width:250px;background:rgba(20,24,33,.94);border:1px solid #232a38;border-radius:14px;padding:14px 16px;z-index:10}
+  .stamp h3{font-size:12px;text-transform:uppercase;letter-spacing:.8px;color:#8b93a7;margin-bottom:8px}
+  .stamp .row{display:flex;justify-content:space-between;font-size:13px;margin:4px 0}
+  .stamp .row b{color:#3ddc97}
+  .flags{position:fixed;left:20px;top:70px;max-width:330px;font-size:10.5px;color:#5b6274;line-height:1.5;z-index:5;pointer-events:none}
+  @media (max-width:720px){ .legend{display:none} .flags{display:none} .stamp{display:none} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<header class="hdr">
+  <h1><b>IVR</b> · Diamond Heights Subdivision — Earthwork Visualizer</h1>
+  <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">STA 8+00 → 29+14</span></p>
+</header>
+<div class="flags">
+  PILOT DATA NOTES — Horizontal alignment schematic (profile data exact). C-6/C-7 overlap conflict carried per cutfill package. Cul-de-sac FG not printed (estimated). Quantities stamped = audited MC p50 values, not recomputed from this surface.
+</div>
+<div class="legend">
+  <div><span class="sw" style="background:#7a5c48"></span>Existing ground</div>
+  <div><span class="sw" style="background:#ff6b6b"></span>Cut (remove)</div>
+  <div><span class="sw" style="background:#4aa3ff"></span>Fill (place)</div>
+  <div><span class="sw" style="background:#565d6b"></span>Roadway</div>
+  <div><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
+  <div><span class="sw" style="background:#3ddc97"></span>Utilities</div>
+</div>
+<div class="panel">
+  <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear & Grub</h2></div>
+  <div class="phase-detail" id="ph-detail"></div>
+  <div><span class="qty" id="ph-qty"></span></div>
+  <div class="track" id="track"><div class="fill" id="trackfill" style="width:0%"></div></div>
+  <div class="phases" id="phasebtns"></div>
+  <button class="play" id="play">▶ PLAY INSTALL SEQUENCE</button>
+</div>
+<div class="stamp">
+  <h3>Earthwork summary (audited p50)</h3>
+  <div class="row"><span>Cut</span><b>12,805 CY</b></div>
+  <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
+  <div class="row"><span>Net export</span><b>11,201 CY</b></div>
+  <div class="row"><span>Road</span><b>2,114 LF</b></div>
+  <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
+  <div class="row"><span>Wall</span><b>19.13' max</b></div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const DATA = {
+ "project": "25076 Diamond Heights Subdivision",
+ "location": "Rockford Bay Road, Kootenai County, ID",
+ "client": "ONYX 5 LLC",
+ "engineer": "Olson Engineering, Post Falls ID",
+ "lots": 4,
+ "lot_areas_ac": [
+  1.23,
+  1.19,
+  1.52,
+  2.23
+ ],
+ "stations": [
+  {
+   "s": 800,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 0.0,
+   "y": 0.0
+  },
+  {
+   "s": 820,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 19.4,
+   "y": 8.4
+  },
+  {
+   "s": 840,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 38.7,
+   "y": 16.8
+  },
+  {
+   "s": 860,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 58.1,
+   "y": 25.2
+  },
+  {
+   "s": 880,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 77.4,
+   "y": 33.5
+  },
+  {
+   "s": 900,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 96.8,
+   "y": 41.9
+  },
+  {
+   "s": 920,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 116.2,
+   "y": 50.2
+  },
+  {
+   "s": 940,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 135.5,
+   "y": 58.5
+  },
+  {
+   "s": 960,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 154.9,
+   "y": 66.8
+  },
+  {
+   "s": 980,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 174.2,
+   "y": 75.0
+  },
+  {
+   "s": 1000,
+   "eg": 2220.8,
+   "fg": 2220.84,
+   "cut": 0.0,
+   "fill": 0.04,
+   "x": 193.6,
+   "y": 83.2
+  },
+  {
+   "s": 1020,
+   "eg": 2222.1,
+   "fg": 2220.84,
+   "cut": 1.26,
+   "fill": 0.0,
+   "x": 212.9,
+   "y": 91.3
+  },
+  {
+   "s": 1040,
+   "eg": 2230.6,
+   "fg": 2221.49,
+   "cut": 9.11,
+   "fill": 0.0,
+   "x": 232.3,
+   "y": 99.4
+  },
+  {
+   "s": 1060,
+   "eg": 2233.6,
+   "fg": 2222.62,
+   "cut": 10.98,
+   "fill": 0.0,
+   "x": 251.7,
+   "y": 107.4
+  },
+  {
+   "s": 1080,
+   "eg": 2237.9,
+   "fg": 2224.11,
+   "cut": 13.79,
+   "fill": 0.0,
+   "x": 271.0,
+   "y": 115.3
+  },
+  {
+   "s": 1100,
+   "eg": 2239.0,
+   "fg": 2225.96,
+   "cut": 13.04,
+   "fill": 0.0,
+   "x": 290.4,
+   "y": 123.2
+  },
+  {
+   "s": 1120,
+   "eg": 2241.0,
+   "fg": 2228.18,
+   "cut": 12.82,
+   "fill": 0.0,
+   "x": 309.7,
+   "y": 131.1
+  },
+  {
+   "s": 1140,
+   "eg": 2239.6,
+   "fg": 2230.58,
+   "cut": 9.02,
+   "fill": 0.0,
+   "x": 329.1,
+   "y": 138.8
+  },
+  {
+   "s": 1160,
+   "eg": 2241.2,
+   "fg": 2232.98,
+   "cut": 8.22,
+   "fill": 0.0,
+   "x": 348.5,
+   "y": 146.5
+  },
+  {
+   "s": 1180,
+   "eg": 2243.7,
+   "fg": 2235.38,
+   "cut": 8.32,
+   "fill": 0.0,
+   "x": 367.8,
+   "y": 154.1
+  },
+  {
+   "s": 1200,
+   "eg": 2243.6,
+   "fg": 2237.78,
+   "cut": 5.82,
+   "fill": 0.0,
+   "x": 387.2,
+   "y": 161.5
+  },
+  {
+   "s": 1220,
+   "eg": 2244.7,
+   "fg": 2240.18,
+   "cut": 4.52,
+   "fill": 0.0,
+   "x": 406.5,
+   "y": 168.9
+  },
+  {
+   "s": 1240,
+   "eg": 2247.8,
+   "fg": 2242.58,
+   "cut": 5.22,
+   "fill": 0.0,
+   "x": 425.9,
+   "y": 176.3
+  },
+  {
+   "s": 1260,
+   "eg": 2251.0,
+   "fg": 2244.98,
+   "cut": 6.02,
+   "fill": 0.0,
+   "x": 445.3,
+   "y": 183.4
+  },
+  {
+   "s": 1280,
+   "eg": 2252.6,
+   "fg": 2247.38,
+   "cut": 5.22,
+   "fill": 0.0,
+   "x": 464.6,
+   "y": 190.5
+  },
+  {
+   "s": 1300,
+   "eg": 2253.7,
+   "fg": 2249.78,
+   "cut": 3.92,
+   "fill": 0.0,
+   "x": 484.0,
+   "y": 197.5
+  },
+  {
+   "s": 1320,
+   "eg": 2254.7,
+   "fg": 2252.18,
+   "cut": 2.52,
+   "fill": 0.0,
+   "x": 503.3,
+   "y": 204.4
+  },
+  {
+   "s": 1340,
+   "eg": 2255.7,
+   "fg": 2254.58,
+   "cut": 1.12,
+   "fill": 0.0,
+   "x": 522.7,
+   "y": 211.2
+  },
+  {
+   "s": 1360,
+   "eg": 2256.7,
+   "fg": 2256.98,
+   "cut": 0.0,
+   "fill": 0.28,
+   "x": 542.1,
+   "y": 217.8
+  },
+  {
+   "s": 1380,
+   "eg": 2258.5,
+   "fg": 2259.38,
+   "cut": 0.0,
+   "fill": 0.88,
+   "x": 561.4,
+   "y": 224.3
+  },
+  {
+   "s": 1400,
+   "eg": 2260.0,
+   "fg": 2261.78,
+   "cut": 0.0,
+   "fill": 1.78,
+   "x": 580.8,
+   "y": 230.7
+  },
+  {
+   "s": 1420,
+   "eg": 2262.5,
+   "fg": 2264.18,
+   "cut": 0.0,
+   "fill": 1.68,
+   "x": 600.1,
+   "y": 237.0
+  },
+  {
+   "s": 1440,
+   "eg": 2265.4,
+   "fg": 2266.58,
+   "cut": 0.0,
+   "fill": 1.18,
+   "x": 619.5,
+   "y": 243.1
+  },
+  {
+   "s": 1460,
+   "eg": 2268.2,
+   "fg": 2268.98,
+   "cut": 0.0,
+   "fill": 0.78,
+   "x": 638.8,
+   "y": 249.1
+  },
+  {
+   "s": 1480,
+   "eg": 2272.0,
+   "fg": 2271.38,
+   "cut": 0.62,
+   "fill": 0.0,
+   "x": 658.2,
+   "y": 254.9
+  },
+  {
+   "s": 1500,
+   "eg": 2274.1,
+   "fg": 2273.78,
+   "cut": 0.32,
+   "fill": 0.0,
+   "x": 677.6,
+   "y": 260.6
+  },
+  {
+   "s": 1520,
+   "eg": 2276.5,
+   "fg": 2276.18,
+   "cut": 0.32,
+   "fill": 0.0,
+   "x": 696.9,
+   "y": 266.2
+  },
+  {
+   "s": 1540,
+   "eg": 2280.4,
+   "fg": 2278.58,
+   "cut": 1.82,
+   "fill": 0.0,
+   "x": 716.3,
+   "y": 271.6
+  },
+  {
+   "s": 1560,
+   "eg": 2281.4,
+   "fg": 2280.98,
+   "cut": 0.42,
+   "fill": 0.0,
+   "x": 735.6,
+   "y": 276.9
+  },
+  {
+   "s": 1580,
+   "eg": 2283.5,
+   "fg": 2283.38,
+   "cut": 0.12,
+   "fill": 0.0,
+   "x": 755.0,
+   "y": 282.0
+  },
+  {
+   "s": 1600,
+   "eg": 2284.1,
+   "fg": 2285.78,
+   "cut": 0.0,
+   "fill": 1.68,
+   "x": 774.4,
+   "y": 286.9
+  },
+  {
+   "s": 1620,
+   "eg": 2285.3,
+   "fg": 2288.18,
+   "cut": 0.0,
+   "fill": 2.88,
+   "x": 793.7,
+   "y": 291.7
+  },
+  {
+   "s": 1640,
+   "eg": 2287.5,
+   "fg": 2290.58,
+   "cut": 0.0,
+   "fill": 3.08,
+   "x": 813.1,
+   "y": 296.3
+  },
+  {
+   "s": 1660,
+   "eg": 2289.7,
+   "fg": 2292.98,
+   "cut": 0.0,
+   "fill": 3.28,
+   "x": 832.4,
+   "y": 300.8
+  },
+  {
+   "s": 1680,
+   "eg": 2293.6,
+   "fg": 2295.38,
+   "cut": 0.0,
+   "fill": 1.78,
+   "x": 851.8,
+   "y": 305.1
+  },
+  {
+   "s": 1700,
+   "eg": 2299.2,
+   "fg": 2297.78,
+   "cut": 1.42,
+   "fill": 0.0,
+   "x": 871.2,
+   "y": 309.2
+  },
+  {
+   "s": 1720,
+   "eg": 2302.2,
+   "fg": 2300.18,
+   "cut": 2.02,
+   "fill": 0.0,
+   "x": 890.5,
+   "y": 313.1
+  },
+  {
+   "s": 1740,
+   "eg": 2305.2,
+   "fg": 2302.58,
+   "cut": 2.62,
+   "fill": 0.0,
+   "x": 909.9,
+   "y": 316.9
+  },
+  {
+   "s": 1760,
+   "eg": 2308.2,
+   "fg": 2304.98,
+   "cut": 3.22,
+   "fill": 0.0,
+   "x": 929.2,
+   "y": 320.5
+  },
+  {
+   "s": 1780,
+   "eg": 2311.2,
+   "fg": 2307.38,
+   "cut": 3.82,
+   "fill": 0.0,
+   "x": 948.6,
+   "y": 324.0
+  },
+  {
+   "s": 1800,
+   "eg": 2314.1,
+   "fg": 2309.78,
+   "cut": 4.32,
+   "fill": 0.0,
+   "x": 968.0,
+   "y": 327.2
+  },
+  {
+   "s": 1820,
+   "eg": 2316.9,
+   "fg": 2312.18,
+   "cut": 4.72,
+   "fill": 0.0,
+   "x": 987.3,
+   "y": 330.3
+  },
+  {
+   "s": 1840,
+   "eg": 2321.0,
+   "fg": 2314.58,
+   "cut": 6.42,
+   "fill": 0.0,
+   "x": 1006.7,
+   "y": 333.2
+  },
+  {
+   "s": 1860,
+   "eg": 2324.8,
+   "fg": 2316.98,
+   "cut": 7.82,
+   "fill": 0.0,
+   "x": 1026.0,
+   "y": 336.0
+  },
+  {
+   "s": 1880,
+   "eg": 2327.7,
+   "fg": 2319.38,
+   "cut": 8.32,
+   "fill": 0.0,
+   "x": 1045.4,
+   "y": 338.5
+  },
+  {
+   "s": 1900,
+   "eg": 2328.8,
+   "fg": 2321.78,
+   "cut": 7.02,
+   "fill": 0.0,
+   "x": 1064.7,
+   "y": 340.9
+  },
+  {
+   "s": 1920,
+   "eg": 2327.6,
+   "fg": 2324.18,
+   "cut": 3.42,
+   "fill": 0.0,
+   "x": 1084.1,
+   "y": 343.1
+  },
+  {
+   "s": 1940,
+   "eg": 2325.5,
+   "fg": 2326.58,
+   "cut": 0.0,
+   "fill": 1.08,
+   "x": 1103.5,
+   "y": 345.1
+  },
+  {
+   "s": 1960,
+   "eg": 2322.6,
+   "fg": 2328.98,
+   "cut": 0.0,
+   "fill": 6.38,
+   "x": 1122.8,
+   "y": 346.9
+  },
+  {
+   "s": 1980,
+   "eg": 2321.2,
+   "fg": 2331.38,
+   "cut": 0.0,
+   "fill": 10.18,
+   "x": 1142.2,
+   "y": 348.5
+  },
+  {
+   "s": 2000,
+   "eg": 2323.9,
+   "fg": 2333.78,
+   "cut": 0.0,
+   "fill": 9.88,
+   "x": 1161.5,
+   "y": 350.0
+  },
+  {
+   "s": 2020,
+   "eg": 2330.5,
+   "fg": 2336.18,
+   "cut": 0.0,
+   "fill": 5.68,
+   "x": 1180.9,
+   "y": 351.3
+  },
+  {
+   "s": 2040,
+   "eg": 2339.2,
+   "fg": 2338.58,
+   "cut": 0.62,
+   "fill": 0.0,
+   "x": 1200.3,
+   "y": 352.4
+  },
+  {
+   "s": 2060,
+   "eg": 2347.5,
+   "fg": 2340.98,
+   "cut": 6.52,
+   "fill": 0.0,
+   "x": 1219.6,
+   "y": 353.3
+  },
+  {
+   "s": 2080,
+   "eg": 2355.9,
+   "fg": 2343.38,
+   "cut": 12.52,
+   "fill": 0.0,
+   "x": 1239.0,
+   "y": 354.0
+  },
+  {
+   "s": 2100,
+   "eg": 2363.0,
+   "fg": 2345.78,
+   "cut": 17.22,
+   "fill": 0.0,
+   "x": 1258.3,
+   "y": 354.6
+  },
+  {
+   "s": 2120,
+   "eg": 2368.5,
+   "fg": 2348.18,
+   "cut": 20.32,
+   "fill": 0.0,
+   "x": 1277.7,
+   "y": 354.9
+  },
+  {
+   "s": 2140,
+   "eg": 2369.1,
+   "fg": 2350.58,
+   "cut": 18.52,
+   "fill": 0.0,
+   "x": 1297.1,
+   "y": 355.1
+  },
+  {
+   "s": 2160,
+   "eg": 2370.0,
+   "fg": 2352.98,
+   "cut": 17.02,
+   "fill": 0.0,
+   "x": 1316.4,
+   "y": 355.2
+  },
+  {
+   "s": 2180,
+   "eg": 2371.5,
+   "fg": 2355.38,
+   "cut": 16.12,
+   "fill": 0.0,
+   "x": 1335.8,
+   "y": 355.0
+  },
+  {
+   "s": 2200,
+   "eg": 2372.2,
+   "fg": 2357.78,
+   "cut": 14.42,
+   "fill": 0.0,
+   "x": 1355.1,
+   "y": 354.7
+  },
+  {
+   "s": 2220,
+   "eg": 2372.2,
+   "fg": 2358.68,
+   "cut": 13.52,
+   "fill": 0.0,
+   "x": 1374.5,
+   "y": 354.2
+  },
+  {
+   "s": 2240,
+   "eg": 2372.2,
+   "fg": 2359.58,
+   "cut": 12.62,
+   "fill": 0.0,
+   "x": 1393.9,
+   "y": 353.5
+  },
+  {
+   "s": 2260,
+   "eg": 2372.2,
+   "fg": 2360.47,
+   "cut": 11.73,
+   "fill": 0.0,
+   "x": 1413.2,
+   "y": 352.7
+  },
+  {
+   "s": 2280,
+   "eg": 2372.2,
+   "fg": 2361.37,
+   "cut": 10.83,
+   "fill": 0.0,
+   "x": 1432.6,
+   "y": 351.7
+  },
+  {
+   "s": 2300,
+   "eg": 2372.2,
+   "fg": 2362.27,
+   "cut": 9.93,
+   "fill": 0.0,
+   "x": 1451.9,
+   "y": 350.5
+  },
+  {
+   "s": 2320,
+   "eg": 2372.2,
+   "fg": 2363.17,
+   "cut": 9.03,
+   "fill": 0.0,
+   "x": 1471.3,
+   "y": 349.1
+  },
+  {
+   "s": 2340,
+   "eg": 2372.2,
+   "fg": 2364.07,
+   "cut": 8.13,
+   "fill": 0.0,
+   "x": 1490.6,
+   "y": 347.6
+  },
+  {
+   "s": 2360,
+   "eg": 2372.2,
+   "fg": 2364.96,
+   "cut": 7.24,
+   "fill": 0.0,
+   "x": 1510.0,
+   "y": 345.9
+  },
+  {
+   "s": 2380,
+   "eg": 2372.2,
+   "fg": 2365.86,
+   "cut": 6.34,
+   "fill": 0.0,
+   "x": 1529.4,
+   "y": 344.1
+  },
+  {
+   "s": 2400,
+   "eg": 2372.2,
+   "fg": 2366.76,
+   "cut": 5.44,
+   "fill": 0.0,
+   "x": 1548.7,
+   "y": 342.1
+  },
+  {
+   "s": 2420,
+   "eg": 2372.2,
+   "fg": 2367.66,
+   "cut": 4.54,
+   "fill": 0.0,
+   "x": 1568.1,
+   "y": 340.0
+  },
+  {
+   "s": 2440,
+   "eg": 2372.2,
+   "fg": 2368.56,
+   "cut": 3.64,
+   "fill": 0.0,
+   "x": 1587.4,
+   "y": 337.7
+  },
+  {
+   "s": 2460,
+   "eg": 2372.2,
+   "fg": 2369.45,
+   "cut": 2.75,
+   "fill": 0.0,
+   "x": 1606.8,
+   "y": 335.3
+  },
+  {
+   "s": 2480,
+   "eg": 2372.2,
+   "fg": 2370.35,
+   "cut": 1.85,
+   "fill": 0.0,
+   "x": 1626.2,
+   "y": 332.7
+  },
+  {
+   "s": 2500,
+   "eg": 2372.2,
+   "fg": 2371.25,
+   "cut": 0.95,
+   "fill": 0.0,
+   "x": 1645.5,
+   "y": 330.0
+  },
+  {
+   "s": 2520,
+   "eg": 2372.2,
+   "fg": 2372.15,
+   "cut": 0.05,
+   "fill": 0.0,
+   "x": 1664.9,
+   "y": 327.1
+  },
+  {
+   "s": 2540,
+   "eg": 2372.2,
+   "fg": 2373.05,
+   "cut": 0.0,
+   "fill": 0.85,
+   "x": 1684.2,
+   "y": 324.1
+  },
+  {
+   "s": 2560,
+   "eg": 2372.2,
+   "fg": 2373.94,
+   "cut": 0.0,
+   "fill": 1.74,
+   "x": 1703.6,
+   "y": 321.0
+  },
+  {
+   "s": 2580,
+   "eg": 2372.2,
+   "fg": 2374.84,
+   "cut": 0.0,
+   "fill": 2.64,
+   "x": 1723.0,
+   "y": 317.7
+  },
+  {
+   "s": 2600,
+   "eg": 2372.2,
+   "fg": 2375.74,
+   "cut": 0.0,
+   "fill": 3.54,
+   "x": 1742.3,
+   "y": 314.4
+  },
+  {
+   "s": 2620,
+   "eg": 2372.2,
+   "fg": 2376.64,
+   "cut": 0.0,
+   "fill": 4.44,
+   "x": 1761.7,
+   "y": 310.9
+  },
+  {
+   "s": 2640,
+   "eg": 2372.2,
+   "fg": 2377.54,
+   "cut": 0.0,
+   "fill": 5.34,
+   "x": 1781.0,
+   "y": 307.2
+  },
+  {
+   "s": 2660,
+   "eg": 2372.2,
+   "fg": 2378.43,
+   "cut": 0.0,
+   "fill": 6.23,
+   "x": 1800.4,
+   "y": 303.5
+  },
+  {
+   "s": 2680,
+   "eg": 2372.2,
+   "fg": 2379.33,
+   "cut": 0.0,
+   "fill": 7.13,
+   "x": 1819.7,
+   "y": 299.7
+  },
+  {
+   "s": 2700,
+   "eg": 2372.2,
+   "fg": 2380.23,
+   "cut": 0.0,
+   "fill": 8.03,
+   "x": 1839.1,
+   "y": 295.7
+  },
+  {
+   "s": 2720,
+   "eg": 2372.2,
+   "fg": 2381.13,
+   "cut": 0.0,
+   "fill": 8.93,
+   "x": 1858.5,
+   "y": 291.7
+  },
+  {
+   "s": 2740,
+   "eg": 2372.2,
+   "fg": 2382.03,
+   "cut": 0.0,
+   "fill": 9.83,
+   "x": 1877.8,
+   "y": 287.5
+  },
+  {
+   "s": 2760,
+   "eg": 2372.2,
+   "fg": 2382.92,
+   "cut": 0.0,
+   "fill": 10.72,
+   "x": 1897.2,
+   "y": 283.2
+  },
+  {
+   "s": 2780,
+   "eg": 2372.2,
+   "fg": 2383.82,
+   "cut": 0.0,
+   "fill": 11.62,
+   "x": 1916.5,
+   "y": 278.9
+  },
+  {
+   "s": 2800,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 1935.9,
+   "y": 274.5
+  },
+  {
+   "s": 2820,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 1955.3,
+   "y": 270.0
+  },
+  {
+   "s": 2840,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 1974.6,
+   "y": 265.4
+  },
+  {
+   "s": 2860,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 1994.0,
+   "y": 260.7
+  },
+  {
+   "s": 2880,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 2013.3,
+   "y": 256.0
+  },
+  {
+   "s": 2900,
+   "eg": 2372.2,
+   "fg": 2384.27,
+   "cut": 0.0,
+   "fill": 12.07,
+   "x": 2032.7,
+   "y": 251.2
+  }
+ ],
+ "alignment_schematic": true,
+ "cds_center": [
+  2046.2499845811049,
+  247.84047016913033
+ ],
+ "cds_radius_ft": 50,
+ "top_width_ft": 22,
+ "cut_slope": 1.5,
+ "fill_slope": 2.0,
+ "wall": {
+  "sta_start": 1912.47,
+  "sta_end": 2057.47,
+  "max_h_ft": 19.13,
+  "len_lf": 145
+ },
+ "phases": [
+  {
+   "id": 1,
+   "name": "Clear & Grub",
+   "detail": "Limits of disturbance 2.43 ac \u2014 strip vegetation, grub, prep access",
+   "qty": "2.43 AC",
+   "progress_to": 0.12
+  },
+  {
+   "id": 2,
+   "name": "Mass Excavation",
+   "detail": "Road prism cut, 22' top, 1.5:1 slopes, 10% shrink applied",
+   "qty": "12,805 CY (p50)",
+   "progress_to": 0.42,
+   "morph": 1.0
+  },
+  {
+   "id": 3,
+   "name": "Embankment & Wall Backfill",
+   "detail": "Road fill + structural wall backfill (145 LF, max 19.13')",
+   "qty": "1,746 CY (p50)",
+   "progress_to": 0.58,
+   "morph_fill": 1.0
+  },
+  {
+   "id": 4,
+   "name": "Underground Utilities",
+   "detail": "Water/sewer laterals, storm, rock ditch both sides (80%)",
+   "qty": "2,114 LF road \u00b7 3,383 LF ditch",
+   "progress_to": 0.74
+  },
+  {
+   "id": 5,
+   "name": "Subgrade & Final Grade",
+   "detail": "Road + cul-de-sac subgrade, swale shaping, aggregate base 4\"",
+   "qty": "53,266 SF \u00b7 657.6 CY base",
+   "progress_to": 0.88
+  },
+  {
+   "id": 6,
+   "name": "Base & Paving",
+   "detail": "3\" HMA over 4\" base, cul-de-sac bulb",
+   "qty": "5,918 SY \u00b7 732.4 tons",
+   "progress_to": 1.0
+  }
+ ],
+ "stamps": {
+  "cut_cy_p50": 12805,
+  "fill_cy_p50": 495,
+  "net_export_cy_p50": 11201,
+  "road_lf": 2114.16,
+  "pavement_sf": 53266,
+  "wall": "19.13' max @ STA 20+02.73"
+ },
+ "flags": [
+  "Horizontal alignment schematic \u2014 profile data exact, plan-shape approximate (pilot)",
+  "C-6/C-7 overlap conflict carried per cutfill_package.md (\u00b11-cell station offset flagged)",
+  "Cul-de-sac STA 26+90\u201329+14: no FG printed \u2014 bulb cut estimated (widest uncertainty)",
+  "EG beyond STA 22+00 held flat (no read available)",
+  "Quantities stamped = audited MC p50 values from cutfill_package.md, NOT recomputed from this surface"
+ ]
+};
+const S = DATA.stations;               // {s,eg,fg,cut,fill,x,y}
+const N = S.length;
+const LAT = 100, LATN = 21;            // lateral extent / samples per cross-section
+const VSCALE = 2.2;                    // vertical exaggeration
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d12);
+scene.fog = new THREE.Fog(0x0b0d12, 2600, 5200);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 1, 12000);
+camera.position.set(-700, 420, 900);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+document.getElementById('app').appendChild(renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(700, 60, 160);
+controls.enableDamping = true; controls.dampingFactor = .06;
+controls.maxPolarAngle = Math.PI*0.49; controls.minDistance=120; controls.maxDistance=3200;
+
+scene.add(new THREE.HemisphereLight(0x9db4d6, 0x201812, 1.05));
+const sun = new THREE.DirectionalLight(0xfff2dd, 1.5); sun.position.set(-600,900,500); scene.add(sun);
+
+// station -> world XZ (already computed server-side)
+const world = S.map(c => new THREE.Vector2(c.x, c.y));
+// perpendicular per station
+const perp = world.map((p,i)=>{
+  const a = world[Math.max(0,i-1)], b = world[Math.min(N-1,i+1)];
+  const d = new THREE.Vector2(b.x-a.x, b.y-a.y).normalize();
+  return new THREE.Vector2(-d.y, d.x);
+});
+const egY = S.map(c=>c.eg), fgY = S.map(c=>c.fg);
+
+// ---- terrain surface (morphs EG -> corridor final grade) ----
+function crossFinal(i, o){ // final corridor surface at lateral offset o
+  const aw = Math.abs(o);
+  const fg = fgY[i];
+  if (aw <= 11) return fg;                       // 22' road top
+  const slope = o>0 ? (S[i].fill>0.05 ? DATA.fill_slope : DATA.cut_slope) : DATA.cut_slope;
+  const rise = (aw-11)/slope;
+  const blendStart = 38, blendEnd = 68;
+  if (aw <= blendStart) return fg - rise;        // slope zone
+  const t = Math.min(1,(aw-blendStart)/(blendEnd-blendStart));
+  return (fg - rise)*(1-t) + egY[i]*t;           // blend to existing
+}
+const geo = new THREE.PlaneGeometry(1,1,N-1,LATN-1);
+const pos = geo.attributes.position;
+const colors = new Float32Array(pos.count*3);
+const cutCol = new THREE.Color(0xff6b6b), fillCol = new THREE.Color(0x4aa3ff), earthCol = new THREE.Color(0x7a5c48), grassCol = new THREE.Color(0x55603f);
+function placeVertices(morph){ // morph 0..1 EG->final
+  let k=0;
+  for(let j=0;j<LATN;j++){
+    const o = -LAT + (2*LAT)*(j/(LATN-1));
+    for(let i=0;i<N;i++,k++){
+      const p = world[i], pr = perp[i];
+      const x = p.x + pr.x*o, z = p.y + pr.y*o;
+      const eg = egY[i] + Math.abs(o)*0.02*Math.sin(i*0.7+o*0.05); // gentle existing crossfall
+      const fin = crossFinal(i,o);
+      const y = (eg*(1-morph) + fin*morph);
+      pos.setXYZ(k, x, y*VSCALE - 2220*VSCALE, z);
+      // color by cut/fill delta
+      const d = fin - eg; // >0 fill, <0 cut
+      const cut = Math.max(0,-d), fill = Math.max(0,d);
+      const base = earthCol.clone().lerp(grassCol, Math.min(1,Math.abs(o)/LAT*1.4));
+      const col = base.clone();
+      if (cut>0.3) col.lerp(cutCol, Math.min(1,cut/8)*morph);
+      if (fill>0.3) col.lerp(fillCol, Math.min(1,fill/8)*morph);
+      colors[k*3]=col.r; colors[k*3+1]=col.g; colors[k*3+2]=col.b;
+    }
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+}
+geo.setAttribute('color', new THREE.BufferAttribute(colors,3));
+placeVertices(0);
+const terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:.95, flatShading:true}));
+scene.add(terrain);
+
+// ---- road ribbon (appears in paving phase) ----
+const roadGeo = new THREE.PlaneGeometry(1,1,N-1,1);
+{
+  const p = roadGeo.attributes.position; let k=0;
+  for(let j=0;j<2;j++){
+    const o = j===0? -11:11;
+    for(let i=0;i<N;i++,k++){
+      const pr=perp[i], w=world[i];
+      p.setXYZ(k, w.x+pr.x*o, (fgY[i]*VSCALE-2220*VSCALE)+0.4, w.y+pr.y*o);
+    }
+  }
+  roadGeo.computeVertexNormals();
+}
+const road = new THREE.Mesh(roadGeo, new THREE.MeshStandardMaterial({color:0x565d6b, roughness:.85, side:THREE.DoubleSide, transparent:true, opacity:0}));
+scene.add(road);
+
+// ---- retaining wall (fill side, STA 19+12.47-20+57.47) ----
+const wallGrp = new THREE.Group();
+{
+  const i0 = S.findIndex(c=>c.s>=1912), i1 = S.findIndex(c=>c.s>=2058);
+  for(let i=i0;i<i1-1;i++){
+    const h = Math.max(2, S[i].fill + 6);
+    const g = new THREE.BoxGeometry(1, h, 4);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffb86b, roughness:.6, transparent:true, opacity:.9}));
+    const pr = perp[i], w = world[i];
+    m.position.set(w.x+pr.x*16, (S[i].fg + h/2)*VSCALE-2220*VSCALE, w.y+pr.y*16);
+    m.scale.x = Math.hypot(world[i+1].x-w.x, world[i+1].y-w.y);
+    m.lookAt(new THREE.Vector3(world[i+1].x, m.position.y, world[i+1].y));
+    wallGrp.add(m);
+  }
+}
+wallGrp.visible = false; scene.add(wallGrp);
+
+// ---- utilities (glowing centerline + rock ditches) ----
+function polyLine(offset, color, yFn, dashed){
+  const pts=[];
+  for(let i=0;i<N;i++){
+    const pr=perp[i], w=world[i];
+    pts.push(new THREE.Vector3(w.x+pr.x*offset, yFn(i)+0.8, w.y+pr.y*offset));
+  }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  return new THREE.Line(g, new THREE.LineBasicMaterial({color, transparent:true, opacity:.95}));
+}
+const utilGrp = new THREE.Group();
+utilGrp.add(polyLine(0, 0x3ddc97, i=>fgY[i]-2.5));
+utilGrp.add(polyLine(-16, 0x3ddc97, i=>fgY[i]-1.5));
+utilGrp.add(polyLine(16, 0x3ddc97, i=>fgY[i]-1.5));
+utilGrp.visible=false; scene.add(utilGrp);
+
+// ---- cul-de-sac bulb ----
+const cdsGrp = new THREE.Group();
+{
+  const c = DATA.cds_center;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(28,50,48), new THREE.MeshStandardMaterial({color:0x565d6b, side:THREE.DoubleSide, transparent:true, opacity:0}));
+  ring.rotation.x = -Math.PI/2;
+  ring.position.set(c[0], (fgY[N-1]*VSCALE-2220*VSCALE)+0.5, c[1]);
+  cdsGrp.add(ring);
+}
+cdsGrp.visible=false; scene.add(cdsGrp);
+
+// ---- lot pads ----
+const lotsGrp = new THREE.Group();
+{
+  const offs = [[-60,0.22],[60,0.28],[-58,0.5],[62,0.55]];
+  for(let i=0;i<4;i++){
+    const si = Math.floor(N*(0.2+i*0.2));
+    const pr=perp[si], w=world[si], o=offs[i][0];
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(70,2,60), new THREE.MeshStandardMaterial({color:0x6a5a45, roughness:1, transparent:true, opacity:0.0}));
+    pad.position.set(w.x+pr.x*o, (fgY[si]-1.5)*VSCALE-2220*VSCALE, w.y+pr.y*o);
+    pad.rotation.y = Math.atan2(perp[si].y, perp[si].x);
+    lotsGrp.add(pad); pad.userData.targetOp = offs[i][1];
+  }
+}
+lotsGrp.visible=false; scene.add(lotsGrp);
+
+// ---- phase engine ----
+const PH = DATA.phases;
+let phaseIdx = 0, phaseT = 1, playing = false;
+function morphFor(idx, t){
+  // cumulative morph: mass excavation drives cut morph; embankment drives fill morph.
+  // Simplify: single morph that completes across phases 2-3.
+  const m2 = PH[1], m3 = PH[2];
+  if (idx < 1) return 0;
+  if (idx === 1) return (t/1)*(m2.progress_to/0.58);
+  if (idx === 2) return (m2.progress_to/0.58) + (t)*( (m3.progress_to-m2.progress_to)/0.58 );
+  return 1;
+}
+function applyPhase(idx, t){
+  placeVertices(morphFor(idx,t));
+  road.material.opacity = (idx>=5)? Math.min(1,t*1.5) : (idx===4? t*0.15:0);
+  wallGrp.visible = idx>=2; 
+  utilGrp.visible = idx>=3;
+  cdsGrp.visible = idx>=4;
+  lotsGrp.visible = idx>=2;
+  if (idx>=2) lotsGrp.children.forEach(m=>m.material.opacity = (idx===2? t*0.3: m.userData.targetOp));
+  // UI
+  const ph = PH[idx];
+  document.getElementById('ph-n').textContent = ph.id;
+  document.getElementById('ph-name').textContent = ph.name;
+  document.getElementById('ph-detail').textContent = ph.detail;
+  document.getElementById('ph-qty').textContent = ph.qty;
+  document.getElementById('trackfill').style.width = (ph.progress_to*100).toFixed(0)+'%';
+  document.querySelectorAll('#phasebtns button').forEach((b,i)=>{
+    b.classList.toggle('on', i===idx); b.classList.toggle('done', i<idx);
+  });
+}
+function gotoPhase(i, t=1){ phaseIdx=Math.max(0,Math.min(PH.length-1,i)); phaseT=t; applyPhase(phaseIdx,phaseT); }
+
+// phase buttons
+const btns = document.getElementById('phasebtns');
+PH.forEach((ph,i)=>{
+  const b=document.createElement('button'); b.textContent=ph.name.split(' ')[0]; b.onclick=()=>gotoPhase(i,1);
+  btns.appendChild(b);
+});
+// scrub
+const track = document.getElementById('track');
+track.addEventListener('click', e=>{
+  const r = track.getBoundingClientRect();
+  const t = (e.clientX-r.left)/r.width;
+  gotoPhase(phaseIdx, t);
+});
+document.getElementById('play').onclick = ()=>{
+  if (playing){ playing=false; document.getElementById('play').textContent='▶ PLAY INSTALL SEQUENCE'; return; }
+  playing=true; gotoPhase(0,0.01);
+  document.getElementById('play').textContent='⏸ PLAYING…';
+};
+let last = performance.now();
+function tick(now){
+  const dt = (now-last)/1000; last = now;
+  if (playing){
+    phaseT += dt*0.35;
+    if (phaseT>=1){ phaseT=0; phaseIdx++; if (phaseIdx>=PH.length){ phaseIdx=PH.length-1; phaseT=1; playing=false; document.getElementById('play').textContent='▶ REPLAY SEQUENCE'; } }
+    applyPhase(phaseIdx, Math.min(1,phaseT));
+  }
+  controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(tick);
+}
+applyPhase(0,1);
+requestAnimationFrame(tick);
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+</script>
+<footer style="position:fixed;bottom:6px;left:50%;transform:translateX(-50%);color:#5b6274;font-size:10.5px;z-index:5">IVR Excavation · Earthwork Visualizer pilot · profile data from audited takeoff package · for client presentation</footer>
+</body>
+</html>
