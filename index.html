@@ -142901,9 +142901,19 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = .06;
 controls.maxPolarAngle = Math.PI*0.495; controls.minDistance=80; controls.maxDistance=3200;
 function fitCam(){
-  const dist = span*1.05;
-  camera.position.set(WX(cx)-dist*0.55, (span*0.42), MZ(cz)-dist*0.8);
-  controls.target.set(WX(cx), 30, MZ(cz));
+  // single frame of reference: the EG/design grid IS the full model extent
+  const gcx = WX((G.x0+G.x1)/2), gcz = MZ((G.z0+G.z1)/2);
+  const halfDiag = 0.5*Math.hypot(G.x1-G.x0, G.z1-G.z0);
+  const vfov = camera.fov*Math.PI/180;
+  const hfov = 2*Math.atan(Math.tan(vfov/2)*(innerWidth/innerHeight));
+  const dist = halfDiag/Math.sin(Math.min(vfov, hfov)/2)*1.18;
+  const el = 32*Math.PI/180, az = Math.PI*1.22;
+  camera.position.set(
+    gcx + Math.sin(az)*Math.cos(el)*dist,
+    Math.sin(el)*dist + 60,
+    gcz + Math.cos(az)*Math.cos(el)*dist);
+  camera.lookAt(gcx, 40, gcz);
+  controls.target.set(gcx, 40, gcz);
   controls.update();
 }
 fitCam();
