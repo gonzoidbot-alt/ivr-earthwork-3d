@@ -995,60 +995,6 @@ const DATA = {
    "fill": 11.62,
    "x": 1916.5,
    "y": 278.9
-  },
-  {
-   "s": 2800,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 1935.9,
-   "y": 274.5
-  },
-  {
-   "s": 2820,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 1955.3,
-   "y": 270.0
-  },
-  {
-   "s": 2840,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 1974.6,
-   "y": 265.4
-  },
-  {
-   "s": 2860,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 1994.0,
-   "y": 260.7
-  },
-  {
-   "s": 2880,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 2013.3,
-   "y": 256.0
-  },
-  {
-   "s": 2900,
-   "eg": 2372.2,
-   "fg": 2384.27,
-   "cut": 0.0,
-   "fill": 12.07,
-   "x": 2032.7,
-   "y": 251.2
   }
  ],
  "alignment_schematic": true,
@@ -1125,7 +1071,8 @@ const DATA = {
   "C-6/C-7 overlap conflict carried per cutfill_package.md (\u00b11-cell station offset flagged)",
   "Cul-de-sac STA 26+90\u201329+14: no FG printed \u2014 bulb cut estimated (widest uncertainty)",
   "EG beyond STA 22+00 held flat (no read available)",
-  "Quantities stamped = audited MC p50 values from cutfill_package.md, NOT recomputed from this surface"
+  "Quantities stamped = audited MC p50 values from cutfill_package.md, NOT recomputed from this surface",
+  "Model ends at STA 27+80 \u2014 last profile station; cul-de-sac (26+90\u201329+14) has no printed FG"
  ]
 };
 const S = DATA.stations;               // {s,eg,fg,cut,fill,x,y}
@@ -1237,11 +1184,11 @@ const wallGrp = new THREE.Group();
   const i0 = S.findIndex(c=>c.s>=1912), i1 = S.findIndex(c=>c.s>=2058);
   for(let i=i0;i<i1-1;i++){
     const side = (egY[i] > fgY[i]) ? 1 : -1;      // wall retains the high (cut) side
-    const hH = Math.max(4, S[i].cut*1.0);          // wall height ~ retained depth
+    const hH = Math.max(7, S[i].cut*1.1);          // wall height ~ retained depth
     const a = world[i], b = world[i+1];
     const segLen = Math.max(6, Math.hypot(b.x-a.x, b.y-a.y));
-    const g = new THREE.BoxGeometry(segLen, hH, 3);
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffb86b, roughness:.55}));
+    const g = new THREE.BoxGeometry(segLen, hH, 4);
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:0xffa63e, roughness:.45, emissive:0xff8c1a, emissiveIntensity:.35}));
     const pr = perp[i], off = side*13.5;
     const mx = (a.x+b.x)/2 + pr.x*off, mz = (a.y+b.y)/2 + pr.y*off;
     m.position.set(mx, (S[i].fg + hH/2)*VSCALE-2220*VSCALE, mz);
