@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d12">
+<title>IVR · Diamond Heights — Earthwork Visualizer (Design Model)</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#0b0d12;
+    --text:#e8eaf0;
+    --muted:#a3adbd;
+    --amber:#ffb86b;
+    --green:#3ddc97;
+    --line:rgba(194,210,231,.14);
+    --glass:rgba(18,24,33,.78);
+    --footer-height:38px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  button,input{font:inherit}
+  button{cursor:pointer}
+  button:focus-visible,input:focus-visible,summary:focus-visible,[role="slider"]:focus-visible{outline:2px solid var(--amber);outline-offset:4px}
+  button{touch-action:manipulation}
+  #app{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .hdr{
+    position:fixed;inset:0 0 auto;padding:17px 23px 24px;
+    background:linear-gradient(180deg,rgba(11,13,18,.96),rgba(11,13,18,.62) 65%,transparent);
+    z-index:10;pointer-events:none;
+  }
+  .header-line{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+  .eyebrow{font-size:9px;letter-spacing:2.4px;font-weight:700;color:#a9b5c2;margin-bottom:4px}
+  .hdr h1{font-size:18px;font-weight:600;letter-spacing:.15px;line-height:1.4}
+  .hdr h1 b{color:var(--amber);font-weight:850}
+  .hdr p{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .hdr .chip{
+    display:inline-block;background:rgba(22,29,39,.78);border:1px solid var(--line);
+    border-radius:5px;padding:2px 8px;font-size:10.5px;color:#b8c1d0;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  .header-actions{display:flex;align-items:center;gap:8px;pointer-events:auto;flex-shrink:0;padding-top:5px}
+  .tool{
+    border:1px solid var(--line);border-radius:9px;background:rgba(21,28,38,.8);
+    color:#d9e0eb;padding:8px 12px;font-size:11px;font-weight:600;white-space:nowrap;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    transition:background .2s,border-color .2s,transform .2s;
+  }
+  .tool:hover{background:rgba(43,54,68,.9);border-color:rgba(255,184,107,.5)}
+  .tool:active{transform:translateY(1px)}
+  .info-toggle{display:none}
+  .workspace{
+    position:fixed;top:111px;left:23px;right:23px;bottom:calc(var(--footer-height) + 17px);
+    display:flex;justify-content:space-between;gap:20px;pointer-events:none;z-index:10;
+  }
+  .rail{display:flex;flex-direction:column;gap:14px;min-height:0;overflow:auto;scrollbar-width:thin;scrollbar-color:#46505d transparent}
+  .left-rail{width:365px;max-width:calc(100vw - 46px)}
+  .right-rail{width:260px}
+  .glass{
+    background:linear-gradient(135deg,rgba(33,43,56,.79),rgba(16,22,31,.84));
+    border:1px solid var(--line);border-radius:15px;
+    box-shadow:0 12px 42px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.035);
+    backdrop-filter:blur(20px) saturate(120%);-webkit-backdrop-filter:blur(20px) saturate(120%);
+    pointer-events:auto;
+  }
+  .flags{flex-shrink:0;font-size:10.5px;color:#a7b2c3;line-height:1.65}
+  .flags summary{padding:10px 14px;cursor:pointer;color:#c1cbd7;font-size:10px;font-weight:650;letter-spacing:.75px}
+  .flags summary::marker{color:var(--amber)}
+  .notes-body{padding:0 14px 13px;max-height:210px;overflow:auto}
+  .notes-body p{margin-top:4px}
+  .notes-body strong{color:#dbe1e9;font-weight:600}
+  #data-flags{padding-left:14px;margin-top:8px;color:#b8bdc6}
+  #data-flags:empty{display:none}
+  #data-flags li+li{margin-top:5px}
+  .display-note{padding-top:8px;margin-top:9px!important;border-top:1px solid var(--line);color:#8f9cae}
+  .panel{padding:17px 18px 15px;margin-top:auto;flex-shrink:0}
+  .panel-kicker{display:flex;align-items:center;justify-content:space-between;font-size:9px;font-weight:650;letter-spacing:1.6px;color:#9eabbc;margin-bottom:9px}
+  .live-dot{width:5px;height:5px;background:var(--green);display:inline-block;border-radius:50%;margin-right:6px;box-shadow:0 0 10px rgba(61,220,151,.3)}
+  .phase-title{display:flex;align-items:center;gap:11px;min-height:35px}
+  .phase-title .n{font-size:29px;line-height:1;font-weight:800;color:var(--amber);font-variant-numeric:tabular-nums}
+  .phase-title h2{font-size:16px;font-weight:650;line-height:1.3}
+  .phase-detail{color:#adb7c8;font-size:12px;margin-top:7px;min-height:36px;line-height:1.5}
+  .qty{
+    display:inline-block;margin-top:9px;max-width:100%;
+    background:linear-gradient(110deg,rgba(255,184,107,.15),rgba(255,184,107,.055));
+    border:1px solid rgba(255,184,107,.29);color:#ffd09d;
+    border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;letter-spacing:.15px;
+    overflow-wrap:anywhere;
+  }
+  .qty.phase-change{animation:quantity-in .38s cubic-bezier(.2,.75,.25,1) both}
+  @keyframes quantity-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+  .track-head{display:flex;justify-content:space-between;font-size:9px;letter-spacing:.7px;color:#93a1b4;margin-top:14px}
+  .track{margin-top:7px;height:7px;background:rgba(8,12,18,.75);border:1px solid rgba(255,255,255,.055);border-radius:8px;position:relative;cursor:ew-resize;touch-action:none}
+  .track:before{content:"";position:absolute;inset:-9px 0}
+  .track .fill{height:100%;border-radius:8px;background:linear-gradient(90deg,#ffb86b,#d8d19a 55%,#3ddc97);position:relative}
+  .track .fill:after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;transform:translateY(-50%);background:#e6eadc;border-radius:50%;box-shadow:0 0 0 3px rgba(230,234,220,.09)}
+  .phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:13px}
+  .phases button{
+    display:flex;align-items:center;gap:7px;min-height:36px;width:100%;min-width:0;
+    background:rgba(15,22,31,.65);border:1px solid rgba(167,184,208,.12);
+    color:#b3bed0;border-radius:8px;padding:7px 9px;text-align:left;
+    font-size:10.5px;line-height:1.35;white-space:normal;overflow-wrap:anywhere;
+    transition:background .2s,border-color .2s,color .2s;
+  }
+  .phases .phase-index{font-size:9px;opacity:.6;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .phases button:hover{border-color:rgba(255,184,107,.45);background:rgba(40,46,55,.8)}
+  .phases button.on{background:rgba(255,184,107,.12);border-color:rgba(255,184,107,.65);color:#ffcc94}
+  .phases button.done{color:#8ed8b6;border-color:rgba(61,220,151,.25)}
+  .play{
+    margin-top:12px;width:100%;background:linear-gradient(120deg,#ffd09a,#f2ad65);color:#202127;
+    border:1px solid rgba(255,225,186,.3);border-radius:9px;padding:10px 8px;
+    font-weight:800;font-size:11px;letter-spacing:.65px;
+    box-shadow:0 3px 15px rgba(255,184,107,.08);transition:filter .2s,transform .2s;
+  }
+  .play:hover{filter:brightness(1.07)}
+  .play:active{transform:translateY(1px)}
+  .follow-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;font-size:10.5px;color:#c2ccda}
+  .follow-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
+  .follow-row input{accent-color:var(--amber);width:12px;height:12px}
+  .follow-row small{font-size:9px;color:#8e9caf}
+  .legend{padding:13px 15px;flex-shrink:0}
+  .section-label{font-size:9px;letter-spacing:1.55px;font-weight:650;color:#96a6ba;margin-bottom:9px}
+  .legend .legend-item{display:flex;align-items:center;gap:9px;margin:8px 0;color:#c8d1df;font-size:11px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);flex-shrink:0}
+  .sw.line{height:2px;border-radius:2px;box-shadow:none}
+  .stamp{margin-top:auto;padding:15px 16px;flex-shrink:0}
+  .stamp h3{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#a7b5c7;margin-bottom:11px;font-weight:650;line-height:1.6}
+  .stamp .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12px;margin:0;padding:6px 0;border-bottom:1px solid rgba(170,190,215,.075);color:#b9c3d2}
+  .stamp .row:last-child{border-bottom:0;padding-bottom:0}
+  .stamp .row b{color:#9ee3be;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .view-hud{position:fixed;bottom:calc(var(--footer-height) + 22px);left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:5}
+  .view-hud p{font-size:10px;color:#b2bdc9;text-shadow:0 1px 5px #000}
+  #camera-status{font-size:8px;letter-spacing:1.6px;color:#90a2b5;margin-bottom:5px}
+  .compass{position:fixed;right:307px;top:120px;z-index:5;pointer-events:none;width:45px;height:58px;text-align:center}
+  .compass-label{font-size:10px;font-weight:750;color:#d7e2eb}
+  #compass-arrow{width:27px;height:27px;margin:5px auto;position:relative;transform-origin:center}
+  #compass-arrow:before{content:"";position:absolute;left:9px;top:1px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:14px solid #d7c19e}
+  #compass-arrow:after{content:"";position:absolute;left:9px;top:15px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:10px solid #586b7b}
+  footer{
+    position:fixed;bottom:0;left:0;right:0;min-height:var(--footer-height);display:flex;
+    align-items:center;justify-content:center;text-align:center;padding:8px 20px;
+    background:rgba(10,14,20,.91);border-top:1px solid rgba(161,180,208,.10);
+    color:#a4afbf;font-size:10px;line-height:1.45;z-index:30;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  }
+  #loading{
+    position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:15px;background:#0b0d12;z-index:40;color:#b5c1d0;text-align:center;padding:28px;
+    transition:opacity .45s;
+  }
+  #loading.hidden{opacity:0;pointer-events:none}
+  .loader-mark{width:34px;height:34px;border:1px solid rgba(255,184,107,.18);border-top-color:var(--amber);border-radius:50%;animation:spin 1.5s linear infinite}
+  #loading p{font-size:12px;letter-spacing:.4px;max-width:420px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:1100px){
+    .left-rail{width:330px}.right-rail{width:235px}.compass{right:278px}
+    .view-hud{display:none}
+    .hdr h1{font-size:16px}
+  }
+  @media(max-width:900px){
+    .right-rail{display:none}
+    .right-rail.open{display:flex;position:fixed;right:18px;top:115px;bottom:calc(var(--footer-height) + 16px);width:min(300px,calc(100vw - 36px));z-index:22;padding:1px}
+    .right-rail.open .stamp{margin-top:0}
+    .right-rail.open .glass{background:rgba(19,27,38,.95)}
+    .info-toggle{display:inline-block}
+    .compass{right:25px;top:130px}
+    .header-actions{gap:5px}
+    .tool{padding:7px 9px;font-size:10px}
+  }
+  @media(max-width:600px){
+    :root{--footer-height:48px}
+    .hdr{padding:12px 14px 16px}
+    .header-line{gap:8px}
+    .eyebrow{font-size:8px;letter-spacing:1.7px}
+    .hdr h1{font-size:13px;max-width:260px}
+    .hdr .chip{font-size:8px;padding:2px 5px}
+    .hdr p{gap:4px;margin-top:6px}
+    .header-actions{flex-direction:column;align-items:stretch;padding-top:1px;gap:4px}
+    .tool{padding:5px 8px;font-size:9px}
+    .workspace{top:134px;left:14px;right:14px;bottom:calc(var(--footer-height) + 10px)}
+    .left-rail{width:310px;max-width:100%;gap:8px}
+    .flags summary{padding:7px 11px;font-size:9px}
+    .notes-body{max-height:150px}
+    .panel{padding:12px 13px}
+    .panel-kicker{margin-bottom:7px;font-size:8px}
+    .phase-title{min-height:29px}
+    .phase-title .n{font-size:25px}
+    .phase-title h2{font-size:14px}
+    .phase-detail{font-size:10.5px;min-height:30px;margin-top:5px}
+    .qty{font-size:11px;padding:4px 8px;margin-top:6px}
+    .track-head{margin-top:10px;font-size:8px}
+    .phases{gap:5px;margin-top:11px}
+    .phases button{min-height:32px;padding:6px 7px;font-size:9.5px}
+    .play{padding:8px;margin-top:9px;font-size:10px}
+    .follow-row{margin-top:8px;font-size:10px}
+    .compass{top:145px;right:18px}
+    footer{font-size:8.5px;padding:7px 14px}
+    .right-rail.open{top:134px;right:14px;bottom:calc(var(--footer-height) + 10px)}
+  }
+  @media(max-height:650px) and (min-width:601px){
+    .workspace{top:103px;bottom:calc(var(--footer-height) + 10px)}
+    .panel{padding:12px 15px}
+    .phase-detail{min-height:0}
+    .panel-kicker{margin-bottom:5px}
+    .phases button{min-height:31px;padding:5px 7px}
+    .track-head{margin-top:9px}
+    .qty{margin-top:6px}
+    .legend .legend-item{margin:6px 0}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *,*:before,*:after{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div id="app" aria-label="Interactive 3D earthwork site model"></div>
+
+<header class="hdr">
+  <div class="header-line">
+    <div>
+      <div class="eyebrow">DESIGN MODEL / INSTALL SEQUENCE</div>
+      <h1><b>IVR</b> · Diamond Heights Subdivision — Earthwork Visualizer</h1>
+    </div>
+    <div class="header-actions">
+      <button class="tool" id="fit-site" type="button" title="Restore the deterministic full-site camera">⌖ Fit site</button>
+      <button class="tool info-toggle" id="info-toggle" type="button" aria-expanded="false" aria-controls="right-rail">Project info</button>
+    </div>
+  </div>
+  <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">Built from the Werx design model</span></p>
+</header>
+
+<div class="workspace">
+  <div class="rail left-rail">
+    <details class="flags glass" id="pilot-data-notes">
+      <summary>PILOT DATA NOTES</summary>
+      <div class="notes-body">
+        <p><strong>DATA NOTES</strong> — Alignment, pavement edge, contours, ditches, wall and tank pad from the Werx design-model export (exact). EG surface interpolated from existing-ground contours. C-6/C-7 overlap conflict carried per cutfill package. Quantities stamped = audited MC p50 values, NOT recomputed from this surface.</p>
+        <ul id="data-flags"></ul>
+        <p class="display-note">Display: 2.2× vertical scale. Road crown, materials and atmospheric ground are presentation treatments, not additional survey data.</p>
+      </div>
+    </details>
+
+    <section class="panel glass" aria-label="Install sequence controls">
+      <div class="panel-kicker"><span><span class="live-dot"></span>INSTALL SEQUENCE</span><span id="phase-count">01 / 06</span></div>
+      <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear &amp; Grub</h2></div>
+      <div class="phase-detail" id="ph-detail"></div>
+      <div aria-live="polite" aria-atomic="true"><span class="qty" id="ph-qty"></span></div>
+      <div class="track-head"><span>SEQUENCE PROGRESS</span><span id="progress-label">0%</span></div>
+      <div class="track" id="track" role="slider" tabindex="0" aria-label="Install sequence progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div class="fill" id="trackfill" style="width:0%"></div>
+      </div>
+      <div class="phases" id="phasebtns" aria-label="Install phases"></div>
+      <button class="play" id="play" type="button">▶ PLAY INSTALL SEQUENCE</button>
+      <div class="follow-row">
+        <label><input id="follow-road" type="checkbox">Follow road</label>
+        <small>Flythrough during PLAY</small>
+      </div>
+    </section>
+  </div>
+
+  <aside class="rail right-rail" id="right-rail">
+    <div class="legend glass">
+      <h2 class="section-label">MODEL LAYERS</h2>
+      <div class="legend-item"><span class="sw" style="background:#6d5b42"></span>Existing ground</div>
+      <div class="legend-item"><span class="sw" style="background:#565d6b"></span>Roadway (design)</div>
+      <div class="legend-item"><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
+      <div class="legend-item"><span class="sw line" style="background:#3ddc97"></span>Ditches / drainage</div>
+      <div class="legend-item"><span class="sw line" style="background:#c9a961"></span>Design contours</div>
+    </div>
+    <section class="stamp glass" aria-label="Audited quantities">
+      <h3>Earthwork summary (audited p50)</h3>
+      <div class="row"><span>Cut</span><b>12,805 CY</b></div>
+      <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
+      <div class="row"><span>Net export</span><b>11,201 CY</b></div>
+      <div class="row"><span>Road</span><b>2,114 LF</b></div>
+      <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
+      <div class="row"><span>Wall</span><b>19.13' max</b></div>
+    </section>
+  </aside>
+</div>
+
+<div class="compass" aria-hidden="true"><span class="compass-label">N</span><div id="compass-arrow"></div></div>
+<div class="view-hud"><div id="camera-status">SITE OVERVIEW</div><p>Drag to orbit · Scroll to zoom · Right-drag to pan</p></div>
+<footer>IVR Excavation · geometry from the Werx design model (exact) · quantities from audited takeoff package · for client presentation</footer>
+
+<div id="loading" role="status"><div class="loader-mark"></div><p id="loading-text">Preparing the design-model terrain…</p></div>
+
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+</script>
+<script>
+window.__errs = [];
+window.addEventListener('error', e => window.__errs.push(String(e.message) + ' @ line ' + e.lineno));
+window.addEventListener('unhandledrejection', e => window.__errs.push(String(e.reason)));
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const DATA = /*__DATA_INJECT__*/ null;
+
+const $ = id => document.getElementById(id);
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+$('pilot-data-notes').open = innerWidth > 1000 && innerHeight > 790;
+$('info-toggle').addEventListener('click', () => {
+  const open = $('right-rail').classList.toggle('open');
+  $('info-toggle').setAttribute('aria-expanded', String(open));
+});
+
+if (DATA) {
+  try {
+    initialize();
+  } catch (error) {
+    window.__errs.push(String(error.stack || error));
+    $('loading-text').textContent = 'The site model could not be initialized. ' + error.message;
+    document.querySelector('.loader-mark').style.animation = 'none';
+    console.error(error);
+  }
+} else {
+  $('loading-text').textContent = 'Waiting for the design-model data to be injected by the build pipeline.';
+  document.querySelector('.loader-mark').style.animation = 'none';
+}
+
+function initialize(){
+  const PH = DATA.phases;
+  const S = DATA.stations;
+  const ST = S;
+  const G = DATA.eg_grid;
+  const auditedStamps = DATA.stamps;
+  const VSCALE = 2.2, ZBASE = 2220;
+  const clamp = THREE.MathUtils.clamp;
+  const lerp = THREE.MathUtils.lerp;
+  const smooth = x => { x = clamp(x,0,1); return x*x*(3-2*x); };
+
+  for (const flag of DATA.flags || []){
+    const li = document.createElement('li');
+    li.textContent = String(flag);
+    $('data-flags').appendChild(li);
+  }
+
+  function cleanPath(points, closed=false){
+    const out = [];
+    for (const p of points || []){
+      if (!p || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue;
+      const previous = out[out.length-1];
+      if (!previous || Math.hypot(p[0]-previous[0],p[1]-previous[1]) > 0.0001) out.push(p);
+    }
+    if (closed && out.length > 1 &&
+        Math.hypot(out[0][0]-out.at(-1)[0],out[0][1]-out.at(-1)[1]) < 0.0001) out.pop();
+    return out;
+  }
+
+  const ring = cleanPath(DATA.pavement_ring,true);
+  const spine = cleanPath(DATA.spine && DATA.spine.length ? DATA.spine : S.map(p=>[p.x,p.y,p.fg]));
+  const ringXY = ring.map(p=>[p[0],p[1]]);
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity;
+  for (const p of S){
+    minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+    minZ=Math.min(minZ,p.y);maxZ=Math.max(maxZ,p.y);
+  }
+  for (const p of ring){
+    minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);
+    minZ=Math.min(minZ,p[1]);maxZ=Math.max(maxZ,p[1]);
+  }
+  const cx=(minX+maxX)/2, cz=(minZ+maxZ)/2;
+  const WX = x => x-cx;
+  const MZ = y => -(y-cz);
+  const span = Math.max(G.x1-G.x0,G.z1-G.z0);
+  const gcx = WX((G.x0+G.x1)/2), gcz = MZ((G.z0+G.z1)/2);
+  const elevationY = z => (z-ZBASE)*VSCALE;
+
+  // All surface sampling remains bilinear, in DATA-frame plan coordinates.
+  // The last cell is handled explicitly so exact grid endpoints are preserved.
+  function gridElev(px,pz){
+    const fx = clamp((px-G.x0)/(G.x1-G.x0),0,1)*(G.nx-1);
+    const fz = clamp((pz-G.z0)/(G.z1-G.z0),0,1)*(G.nz-1);
+    const ix = Math.min(G.nx-2,Math.floor(fx));
+    const iz = Math.min(G.nz-2,Math.floor(fz));
+    const tx=fx-ix,tz=fz-iz;
+    const i00=iz*G.nx+ix,i10=i00+1,i01=i00+G.nx,i11=i01+1;
+    const a=G.eg,b=G.design;
+    return {
+      eg:a[i00]*(1-tx)*(1-tz)+a[i10]*tx*(1-tz)+a[i01]*(1-tx)*tz+a[i11]*tx*tz,
+      dz:b[i00]*(1-tx)*(1-tz)+b[i10]*tx*(1-tz)+b[i01]*(1-tx)*tz+b[i11]*tx*tz
+    };
+  }
+
+  let minElevation=Infinity,maxElevation=-Infinity;
+  for (let i=0;i<G.eg.length;i++){
+    minElevation=Math.min(minElevation,G.eg[i],G.design[i]);
+    maxElevation=Math.max(maxElevation,G.eg[i],G.design[i]);
+  }
+  for (const p of DATA.wall_daylight){
+    if (Number.isFinite(p[2])) maxElevation=Math.max(maxElevation,p[2]);
+  }
+  const minY=elevationY(minElevation),maxY=elevationY(maxElevation);
+  const groundY=minY-10;
+  const modelCenter=new THREE.Vector3(gcx,(minY+maxY)/2,gcz);
+
+  const scene=new THREE.Scene();
+  const fogColor=new THREE.Color(0x202a33);
+  scene.background=new THREE.Color(0x0b0d12);
+  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,2,30000);
+  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.08;
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate=false;
+  $('app').appendChild(renderer.domElement);
+  renderer.domElement.setAttribute('aria-label','Diamond Heights 3D site. Drag to orbit, scroll to zoom.');
+  renderer.domElement.tabIndex=0;
+
+  const controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;
+  controls.dampingFactor=.065;
+  controls.maxPolarAngle=Math.PI*.495;
+  controls.minDistance=45;
+  controls.maxDistance=12000;
+  controls.autoRotate=!reducedMotion;
+  controls.autoRotateSpeed=.16;
+  controls.screenSpacePanning=true;
+
+  let fitDistance=0;
+  // Preserve the deterministic full-grid bounding-sphere fit.
+  function fitCam(){
+    const gcx=WX((G.x0+G.x1)/2),gcz=MZ((G.z0+G.z1)/2);
+    const halfDiag=.5*Math.hypot(G.x1-G.x0,G.z1-G.z0);
+    const vfov=camera.fov*Math.PI/180;
+    const hfov=2*Math.atan(Math.tan(vfov/2)*(innerWidth/innerHeight));
+    const dist=halfDiag/Math.sin(Math.min(vfov,hfov)/2)*1.18;
+    const el=32*Math.PI/180,az=Math.PI*1.78;
+    fitDistance=dist;
+    controls.maxDistance=Math.max(3200,dist*2.5);
+    camera.far=Math.max(15000,dist+span*18);
+    camera.updateProjectionMatrix();
+    camera.position.set(
+      gcx+Math.sin(az)*Math.cos(el)*dist,
+      Math.sin(el)*dist+60,
+      gcz+Math.cos(az)*Math.cos(el)*dist
+    );
+    camera.lookAt(gcx,40,gcz);
+    controls.target.set(gcx,40,gcz);
+    const auto=controls.autoRotate;
+    controls.autoRotate=false;
+    controls.update();
+    controls.autoRotate=auto;
+  }
+  fitCam();
+
+  // ---------- Atmosphere ----------
+  scene.fog=new THREE.Fog(fogColor,fitDistance+span*.6,fitDistance+span*6.5);
+  const sunDirection=new THREE.Vector3(-.65,1.15,.5).normalize();
+  const sky=new THREE.Mesh(
+    new THREE.SphereGeometry(1,40,24),
+    new THREE.ShaderMaterial({
+      side:THREE.BackSide,
+      depthWrite:false,
+      depthTest:false,
+      toneMapped:false,
+      uniforms:{
+        topColor:{value:new THREE.Color(0x0b0d12)},
+        midColor:{value:new THREE.Color(0x18222e)},
+        horizonColor:{value:fogColor.clone()},
+        bottomColor:{value:new THREE.Color(0x141b22)},
+        sunDirection:{value:sunDirection}
+      },
+      vertexShader:`
+        varying vec3 vSky;
+        void main(){
+          vSky=position;
+          gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+        }
+      `,
+      fragmentShader:`
+        uniform vec3 topColor,midColor,horizonColor,bottomColor,sunDirection;
+        varying vec3 vSky;
+        void main(){
+          vec3 direction=normalize(vSky);
+          float h=direction.y;
+          vec3 color=mix(horizonColor,midColor,smoothstep(0.0,0.35,max(h,0.0)));
+          color=mix(color,topColor,smoothstep(0.22,0.95,max(h,0.0)));
+          color=mix(color,bottomColor,smoothstep(0.0,0.65,max(-h,0.0)));
+          float glow=pow(max(dot(direction,sunDirection),0.0),18.0);
+          color+=vec3(0.043,0.031,0.017)*glow;
+          gl_FragColor=vec4(color,1.0);
+          #include <colorspace_fragment>
+        }
+      `
+    })
+  );
+  sky.scale.setScalar(camera.far*.85);
+  sky.frustumCulled=false;
+  sky.renderOrder=-1000;
+  scene.add(sky);
+
+  const groundColor=new THREE.Color(0x303a34);
+  const ground=new THREE.Mesh(
+    new THREE.CircleGeometry(span*13,160),
+    new THREE.MeshStandardMaterial({color:groundColor,roughness:1,metalness:0})
+  );
+  ground.rotation.x=-Math.PI/2;
+  ground.position.set(gcx,groundY,gcz);
+  ground.receiveShadow=true;
+  scene.add(ground);
+
+  // ---------- Lighting and fitted shadow volume ----------
+  scene.add(new THREE.HemisphereLight(0xb9cfe7,0x65513a,1.5));
+  const sun=new THREE.DirectionalLight(0xffdfb5,2.65);
+  sun.position.copy(modelCenter).addScaledVector(sunDirection,span*2.3);
+  sun.target.position.copy(modelCenter);
+  sun.castShadow=true;
+  const shadowSize=Math.min(renderer.capabilities.maxTextureSize,innerWidth>900?4096:2048);
+  sun.shadow.mapSize.set(shadowSize,shadowSize);
+  sun.shadow.bias=-.00010;
+  sun.shadow.normalBias=.35;
+  sun.shadow.radius=2;
+  scene.add(sun,sun.target);
+
+  const shadowCamera=sun.shadow.camera;
+  shadowCamera.position.copy(sun.position);
+  shadowCamera.lookAt(sun.target.position);
+  shadowCamera.updateMatrixWorld(true);
+  const lightBounds=new THREE.Box3();
+  for (const x of [WX(G.x0),WX(G.x1)]){
+    for (const y of [groundY,maxY+15]){
+      for (const z of [MZ(G.z0),MZ(G.z1)]){
+        lightBounds.expandByPoint(new THREE.Vector3(x,y,z).applyMatrix4(shadowCamera.matrixWorldInverse));
+      }
+    }
+  }
+  const shadowPad=span*.055;
+  shadowCamera.left=lightBounds.min.x-shadowPad;
+  shadowCamera.right=lightBounds.max.x+shadowPad;
+  shadowCamera.bottom=lightBounds.min.y-shadowPad;
+  shadowCamera.top=lightBounds.max.y+shadowPad;
+  shadowCamera.near=Math.max(1,-lightBounds.max.z-shadowPad);
+  shadowCamera.far=-lightBounds.min.z+shadowPad;
+  shadowCamera.updateProjectionMatrix();
+  const fillLight=new THREE.DirectionalLight(0x91b8df,.65);
+  fillLight.position.copy(modelCenter).add(new THREE.Vector3(span*.7,span*.5,-span));
+  fillLight.target.position.copy(modelCenter);
+  scene.add(fillLight,fillLight.target);
+
+  // ---------- Deterministic procedural materials ----------
+  function hash(x,y){
+    let h=Math.imul(x|0,374761393)^Math.imul(y|0,668265263);
+    h=Math.imul(h^(h>>>13),1274126177);
+    return ((h^(h>>>16))>>>0)/4294967295;
+  }
+  function noise(x,y){
+    const ix=Math.floor(x),iy=Math.floor(y);
+    const u=smooth(x-ix),v=smooth(y-iy);
+    return lerp(lerp(hash(ix,iy),hash(ix+1,iy),u),lerp(hash(ix,iy+1),hash(ix+1,iy+1),u),v);
+  }
+  function fbm(x,y){
+    return noise(x,y)*.58+noise(x*2.07+17,y*2.07-13)*.28+noise(x*4.19-9,y*4.19+21)*.14;
+  }
+  function makeGrain(){
+    const size=128,bytes=new Uint8Array(size*size*4);
+    for (let y=0;y<size;y++){
+      for (let x=0;x<size;x++){
+        const k=(y*size+x)*4,n=hash(x+57,y-31);
+        const value=Math.round(193+n*62);
+        bytes[k]=bytes[k+1]=bytes[k+2]=value;
+        bytes[k+3]=255;
+      }
+    }
+    const texture=new THREE.DataTexture(bytes,size,size,THREE.RGBAFormat);
+    texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+    texture.magFilter=THREE.LinearFilter;
+    texture.minFilter=THREE.LinearMipmapLinearFilter;
+    texture.generateMipmaps=true;
+    texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    texture.needsUpdate=true;
+    return texture;
+  }
+  const grain=makeGrain();
+
+  // ---------- High-resolution EG -> design terrain ----------
+  const segX=(G.nx-1)*2,segZ=(G.nz-1)*2;
+  const gW=G.x1-G.x0,gH=G.z1-G.z0;
+  const terrainGeo=new THREE.PlaneGeometry(gW,gH,segX,segZ);
+  const tPosition=terrainGeo.attributes.position;
+  const egZ=new Float32Array(tPosition.count);
+  const dzZ=new Float32Array(tPosition.count);
+  const baseColors=new Float32Array(tPosition.count*3);
+  const designColors=new Float32Array(tPosition.count*3);
+  const colors=new Float32Array(tPosition.count*3);
+  const grassA=new THREE.Color(0x697253);
+  const grassB=new THREE.Color(0x858064);
+  const soil=new THREE.Color(0x9a8060);
+  const rock=new THREE.Color(0x898374);
+  const color=new THREE.Color();
+  const gradedColor=new THREE.Color();
+
+  for (let j=0,k=0;j<=segZ;j++){
+    const py=G.z1-gH*j/segZ;
+    for (let i=0;i<=segX;i++,k++){
+      const px=G.x0+gW*i/segX;
+      const sample=gridElev(px,py);
+      egZ[k]=elevationY(sample.eg);
+      dzZ[k]=elevationY(sample.dz);
+      tPosition.setXYZ(k,WX(px),egZ[k],MZ(py));
+      terrainGeo.attributes.uv.setXY(k,(px-G.x0)/22,(py-G.z0)/22);
+      const broad=fbm(px*.015,py*.015);
+      const fleck=noise(px*.12+5,py*.12-8);
+      const ex=gridElev(Math.min(G.x1,px+5),py).eg;
+      const ey=gridElev(px,Math.min(G.z1,py+5)).eg;
+      const slope=clamp(Math.hypot(ex-sample.eg,ey-sample.eg)/6,0,1);
+      color.copy(grassA).lerp(grassB,smooth((broad-.25)*1.6));
+      color.lerp(rock,slope*.32).multiplyScalar(.91+fleck*.15);
+      const changed=smooth(Math.abs(sample.dz-sample.eg)/3.5);
+      const gx=Math.round((px-G.x0)/gW*(G.nx-1));
+      const gz=Math.round((py-G.z0)/gH*(G.nz-1));
+      const inside=G.inside ? Boolean(G.inside[gz*G.nx+gx]) : true;
+      gradedColor.copy(color).lerp(soil,changed*(inside?.76:.52));
+      gradedColor.multiplyScalar(.97+noise(px*.06,py*.06)*.06);
+      color.toArray(baseColors,k*3);
+      gradedColor.toArray(designColors,k*3);
+    }
+  }
+  terrainGeo.setAttribute('color',new THREE.BufferAttribute(colors,3));
+  terrainGeo.attributes.position.setUsage(THREE.DynamicDrawUsage);
+  terrainGeo.attributes.color.setUsage(THREE.DynamicDrawUsage);
+  terrainGeo.boundingBox=new THREE.Box3(
+    new THREE.Vector3(WX(G.x0),minY,MZ(G.z1)),
+    new THREE.Vector3(WX(G.x1),maxY,MZ(G.z0))
+  );
+  terrainGeo.boundingSphere=terrainGeo.boundingBox.getBoundingSphere(new THREE.Sphere());
+
+  let lastMorph=-1,apronGeo=null,boundaryGeo=null;
+  let boundarySamples=[];
+  const apronEdges=[];
+  const apronScales=[1,1.10,1.32,1.73,2.35,2.8];
+  for (let i=0;i<=segX;i++) apronEdges.push(i);
+  for (let j=1;j<=segZ;j++) apronEdges.push(j*(segX+1)+segX);
+  for (let i=segX-1;i>=0;i--) apronEdges.push(segZ*(segX+1)+i);
+  for (let j=segZ-1;j>0;j--) apronEdges.push(j*(segX+1));
+
+  function placeTerrain(morph){
+    morph=clamp(morph,0,1);
+    if (Math.abs(morph-lastMorph)<.000001) return;
+    lastMorph=morph;
+    const p=terrainGeo.attributes.position.array;
+    for (let i=0;i<egZ.length;i++){
+      p[i*3+1]=egZ[i]*(1-morph)+dzZ[i]*morph;
+      for (let c=0;c<3;c++){
+        const k=i*3+c;
+        colors[k]=baseColors[k]*(1-morph)+designColors[k]*morph;
+      }
+    }
+    terrainGeo.attributes.position.needsUpdate=true;
+    terrainGeo.attributes.color.needsUpdate=true;
+    terrainGeo.computeVertexNormals();
+
+    if (apronGeo){
+      const a=apronGeo.attributes.position.array;
+      const ac=apronGeo.attributes.color.array;
+      for (let r=0;r<apronScales.length;r++){
+        const scale=apronScales[r];
+        const fade=smooth((scale-1)/(apronScales.at(-1)-1));
+        for (let j=0;j<apronEdges.length;j++){
+          const edge=apronEdges[j],k=(r*apronEdges.length+j)*3;
+          a[k+1]=lerp(p[edge*3+1],groundY,fade);
+          ac[k]=lerp(colors[edge*3],groundColor.r,fade);
+          ac[k+1]=lerp(colors[edge*3+1],groundColor.g,fade);
+          ac[k+2]=lerp(colors[edge*3+2],groundColor.b,fade);
+        }
+      }
+      apronGeo.attributes.position.needsUpdate=true;
+      apronGeo.attributes.color.needsUpdate=true;
+      apronGeo.computeVertexNormals();
+    }
+    if (boundaryGeo){
+      const positions=boundaryGeo.attributes.position;
+      for (let i=0;i<boundarySamples.length;i++){
+        const s=boundarySamples[i];
+        positions.setY(i,lerp(s.eg,s.dz,morph)+.55);
+      }
+      positions.needsUpdate=true;
+    }
+    renderer.shadowMap.needsUpdate=true;
+  }
+  placeTerrain(0);
+
+  const terrainMaterial=new THREE.MeshStandardMaterial({
+    vertexColors:true,roughness:.98,metalness:0,
+    bumpMap:grain,bumpScale:.11,side:THREE.DoubleSide
+  });
+  const terrain=new THREE.Mesh(terrainGeo,terrainMaterial);
+  terrain.receiveShadow=true;
+  terrain.castShadow=true;
+  terrain.name='EG / design terrain — bilinear grid morph';
+  scene.add(terrain);
+
+  // The atmospheric apron is outside the data grid; the surveyed grid is unchanged.
+  {
+    const positions=[],indices=[],vertexColors=[],uvs=[];
+    const n=apronEdges.length;
+    for (let r=0;r<apronScales.length;r++){
+      const scale=apronScales[r];
+      for (let j=0;j<n;j++){
+        const edge=apronEdges[j];
+        const x=gcx+(tPosition.getX(edge)-gcx)*scale;
+        const z=gcz+(tPosition.getZ(edge)-gcz)*scale;
+        positions.push(x,groundY,z);
+        vertexColors.push(groundColor.r,groundColor.g,groundColor.b);
+        uvs.push(x/22,z/22);
+        if (r<apronScales.length-1){
+          const next=(j+1)%n,a=r*n+j,b=r*n+next,c=(r+1)*n+j,d=(r+1)*n+next;
+          indices.push(a,c,b,b,c,d);
+        }
+      }
+    }
+    apronGeo=new THREE.BufferGeometry();
+    apronGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    apronGeo.setAttribute('color',new THREE.Float32BufferAttribute(vertexColors,3));
+    apronGeo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+    apronGeo.setIndex(indices);
+    const apron=new THREE.Mesh(apronGeo,terrainMaterial);
+    apron.receiveShadow=true;
+    apron.frustumCulled=false;
+    apron.name='Atmospheric ground transition — outside data extent';
+    scene.add(apron);
+  }
+
+  // ---------- Geometry helpers ----------
+  function densify(points,step=6,closed=false){
+    const clean=cleanPath(points,closed),out=[];
+    if (clean.length<2) return clean.slice();
+    const count=closed?clean.length:clean.length-1;
+    for (let i=0;i<count;i++){
+      const a=clean[i],b=clean[(i+1)%clean.length];
+      const steps=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/step));
+      for (let j=0;j<steps;j++){
+        const t=j/steps;
+        out.push([lerp(a[0],b[0],t),lerp(a[1],b[1],t),
+          Number.isFinite(a[2])&&Number.isFinite(b[2])?lerp(a[2],b[2],t):undefined]);
+      }
+    }
+    if (!closed) out.push(clean.at(-1));
+    return out;
+  }
+
+  // Shared-edge adaptive subdivision keeps the entire concave pavement footprint,
+  // including its bulb, watertight while resolving the elevation grid.
+  function tessellatePolygon(points,spacing=6){
+    const shape=new THREE.Shape(cleanPath(points,true).map(p=>new THREE.Vector2(p[0],p[1])));
+    const original=new THREE.ShapeGeometry(shape);
+    const vertices=[];
+    const p=original.attributes.position;
+    for (let i=0;i<p.count;i++) vertices.push([p.getX(i),p.getY(i)]);
+    let indices=Array.from(original.index.array);
+    original.dispose();
+    const spacing2=spacing*spacing;
+    for (let pass=0;pass<16;pass++){
+      const mids=new Map();
+      function midpoint(a,b){
+        const va=vertices[a],vb=vertices[b];
+        if ((va[0]-vb[0])**2+(va[1]-vb[1])**2<=spacing2) return -1;
+        const key=a<b?a+':'+b:b+':'+a;
+        if (mids.has(key)) return mids.get(key);
+        const m=vertices.length;
+        vertices.push([(va[0]+vb[0])/2,(va[1]+vb[1])/2]);
+        mids.set(key,m);
+        return m;
+      }
+      const next=[];
+      for (let i=0;i<indices.length;i+=3){
+        const a=indices[i],b=indices[i+1],c=indices[i+2];
+        const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
+        const mask=(ab>=0?1:0)|(bc>=0?2:0)|(ca>=0?4:0);
+        switch(mask){
+          case 0:next.push(a,b,c);break;
+          case 1:next.push(a,ab,c,ab,b,c);break;
+          case 2:next.push(b,bc,a,bc,c,a);break;
+          case 4:next.push(c,ca,b,ca,a,b);break;
+          case 3:next.push(b,bc,ab,a,ab,c,ab,bc,c);break;
+          case 6:next.push(c,ca,bc,b,bc,a,bc,ca,a);break;
+          case 5:next.push(a,ab,ca,c,ca,b,ca,ab,b);break;
+          case 7:next.push(a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca);break;
+        }
+      }
+      indices=next;
+      if (!mids.size || vertices.length>180000) break;
+    }
+    return {vertices,indices};
+  }
+
+  // Plan-distance BVH only: this never interpolates elevations.
+  function makeSegmentTree(points,closed=false){
+    const segments=[];
+    for (let i=0;i<(closed?points.length:points.length-1);i++){
+      const a=points[i],b=points[(i+1)%points.length];
+      segments.push({a,b,minX:Math.min(a[0],b[0]),maxX:Math.max(a[0],b[0]),minY:Math.min(a[1],b[1]),maxY:Math.max(a[1],b[1])});
+    }
+    function build(items){
+      const node={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+      for (const s of items){
+        node.minX=Math.min(node.minX,s.minX);node.minY=Math.min(node.minY,s.minY);
+        node.maxX=Math.max(node.maxX,s.maxX);node.maxY=Math.max(node.maxY,s.maxY);
+      }
+      if (items.length<=8){node.items=items;return node;}
+      const axis=node.maxX-node.minX>node.maxY-node.minY?0:1;
+      items.sort((a,b)=>(a.a[axis]+a.b[axis])-(b.a[axis]+b.b[axis]));
+      const middle=items.length>>1;
+      node.left=build(items.slice(0,middle));node.right=build(items.slice(middle));
+      return node;
+    }
+    const root=build(segments);
+    function boxDistance(node,x,y){
+      const dx=Math.max(node.minX-x,0,x-node.maxX),dy=Math.max(node.minY-y,0,y-node.maxY);
+      return dx*dx+dy*dy;
+    }
+    return (x,y)=>{
+      let best=Infinity;
+      function visit(node){
+        if (boxDistance(node,x,y)>=best) return;
+        if (node.items){
+          for (const s of node.items){
+            const dx=s.b[0]-s.a[0],dy=s.b[1]-s.a[1];
+            const t=clamp(((x-s.a[0])*dx+(y-s.a[1])*dy)/(dx*dx+dy*dy||1),0,1);
+            best=Math.min(best,(x-s.a[0]-t*dx)**2+(y-s.a[1]-t*dy)**2);
+          }
+        } else {
+          const dl=boxDistance(node.left,x,y),dr=boxDistance(node.right,x,y);
+          if (dl<dr){visit(node.left);visit(node.right);}else{visit(node.right);visit(node.left);}
+        }
+      }
+      visit(root);
+      return Math.sqrt(best);
+    };
+  }
+
+  const centerDistance=makeSegmentTree(spine.length>1?spine:ring,false);
+  const pavementDistance=makeSegmentTree(ring,true);
+  function roadElevation(px,py){
+    const g0=gridElev(px,py);
+    const dCenter=centerDistance(px,py),dEdge=pavementDistance(px,py);
+    const ratio=dCenter/Math.max(.001,dCenter+dEdge);
+    const crown=.16*Math.max(0,1-ratio*ratio);
+    return elevationY(g0.dz)+.65+crown*VSCALE;
+  }
+
+  function polygonSurface(points,spacing,heightFunction){
+    const {vertices,indices}=tessellatePolygon(points,spacing);
+    const positions=new Float32Array(vertices.length*3);
+    const cols=new Float32Array(vertices.length*3);
+    const uv=new Float32Array(vertices.length*2);
+    for (let i=0;i<vertices.length;i++){
+      const [x,y]=vertices[i],k=i*3;
+      positions[k]=WX(x);positions[k+1]=heightFunction(x,y);positions[k+2]=MZ(y);
+      const shade=.9+.10*noise(x*.23,y*.23);
+      cols[k]=cols[k+1]=cols[k+2]=shade;
+      uv[i*2]=x/9;uv[i*2+1]=y/9;
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(positions,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(cols,3));
+    geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+    geo.computeBoundingSphere();
+    return geo;
+  }
+
+  // ---------- Continuous, crowned pavement and inset edge markings ----------
+  const roadGrp=new THREE.Group();
+  roadGrp.name='Full pavement footprint, bulb and edge markings';
+  const roadMaterial=new THREE.MeshStandardMaterial({
+    color:0x343a40,vertexColors:true,roughness:.94,metalness:.015,
+    map:grain,bumpMap:grain,bumpScale:.045,
+    side:THREE.DoubleSide,transparent:true,opacity:0
+  });
+  const roadMesh=new THREE.Mesh(polygonSurface(ring,6,roadElevation),roadMaterial);
+  roadMesh.castShadow=true;
+  roadMesh.receiveShadow=true;
+  roadGrp.add(roadMesh);
+
+  const stripeMaterial=new THREE.MeshStandardMaterial({
+    color:0xe1ddca,roughness:.86,side:THREE.DoubleSide,
+    transparent:true,opacity:0,depthWrite:false,
+    polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1
+  });
+  {
+    const pts=densify(ring,4,true),positions=[],indices=[];
+    let area=0;
+    for (let i=0;i<ring.length;i++){
+      const a=ring[i],b=ring[(i+1)%ring.length];
+      area+=a[0]*b[1]-b[0]*a[1];
+    }
+    const winding=area>=0?1:-1;
+    for (let i=0;i<pts.length;i++){
+      const p=pts[i],prev=pts[(i-1+pts.length)%pts.length],next=pts[(i+1)%pts.length];
+      const dx=next[0]-prev[0],dy=next[1]-prev[1],length=Math.hypot(dx,dy)||1;
+      const nx=-dy/length*winding,ny=dx/length*winding;
+      for (const offset of [.52,.86]){
+        const x=p[0]+nx*offset,y=p[1]+ny*offset;
+        positions.push(WX(x),roadElevation(x,y)+.075,MZ(y));
+      }
+      const a=i*2,b=((i+1)%pts.length)*2;
+      indices.push(a,b,a+1,a+1,b,b+1);
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    geo.setIndex(indices);geo.computeVertexNormals();
+    const stripes=new THREE.Mesh(geo,stripeMaterial);
+    stripes.receiveShadow=true;
+    roadGrp.add(stripes);
+  }
+  roadGrp.visible=false;
+  scene.add(roadGrp);
+
+  // ---------- Continuous retaining-wall ribbon ----------
+  const wallGrp=new THREE.Group();
+  wallGrp.name='Retaining wall — surveyed top, sampled ground toe';
+  const concreteMaterial=new THREE.MeshStandardMaterial({
+    color:0xb3ad9e,roughness:.92,map:grain,bumpMap:grain,bumpScale:.035,
+    side:THREE.DoubleSide
+  });
+  const capMaterial=new THREE.MeshStandardMaterial({
+    color:0xd0c4ac,roughness:.86,map:grain,bumpMap:grain,bumpScale:.025,
+    side:THREE.DoubleSide
+  });
+  {
+    const pts=densify(DATA.wall_daylight,5,true);
+    if (pts.length>2){
+      const sides=[],caps=[],uv=[],capUV=[],sideIndices=[],capIndices=[];
+      let run=0;
+      const halfWidth=.9,capHalfWidth=1.13;
+      for (let i=0;i<pts.length;i++){
+        const p=pts[i],prev=pts[(i-1+pts.length)%pts.length],next=pts[(i+1)%pts.length];
+        if (i) run+=Math.hypot(p[0]-pts[i-1][0],p[1]-pts[i-1][1]);
+        const ax=p[0]-prev[0],ay=p[1]-prev[1],al=Math.hypot(ax,ay)||1;
+        const bx=next[0]-p[0],by=next[1]-p[1],bl=Math.hypot(bx,by)||1;
+        let nx=-ay/al-by/bl,ny=ax/al+bx/bl;
+        const nl=Math.hypot(nx,ny);
+        if (nl<.0001){nx=-by/bl;ny=bx/bl;}else{nx/=nl;ny/=nl;}
+        const miter=Math.min(2,1/Math.max(.5,Math.abs(nx*(-by/bl)+ny*(bx/bl))));
+        const sample=gridElev(p[0],p[1]);
+        const left=gridElev(p[0]+nx*2.4,p[1]+ny*2.4);
+        const right=gridElev(p[0]-nx*2.4,p[1]-ny*2.4);
+        const top=Number.isFinite(p[2])?p[2]:sample.dz;
+        const groundLevel=Math.min(top,sample.eg,sample.dz,left.eg,left.dz,right.eg,right.dz);
+        const topY=elevationY(top)+.10,bottomY=elevationY(groundLevel)-.15;
+        const lx=WX(p[0]+nx*halfWidth*miter),lz=MZ(p[1]+ny*halfWidth*miter);
+        const rx=WX(p[0]-nx*halfWidth*miter),rz=MZ(p[1]-ny*halfWidth*miter);
+        sides.push(lx,bottomY,lz,rx,bottomY,rz,lx,topY,lz,rx,topY,rz);
+        uv.push(run/12,bottomY/12,run/12,bottomY/12,run/12,topY/12,run/12,topY/12);
+        const clx=WX(p[0]+nx*capHalfWidth*miter),clz=MZ(p[1]+ny*capHalfWidth*miter);
+        const crx=WX(p[0]-nx*capHalfWidth*miter),crz=MZ(p[1]-ny*capHalfWidth*miter);
+        caps.push(clx,topY-.20,clz,crx,topY-.20,crz,clx,topY+.17,clz,crx,topY+.17,crz);
+        capUV.push(run/10,0,run/10,1,run/10,0,run/10,1);
+        const a=i*4,b=((i+1)%pts.length)*4;
+        sideIndices.push(a,b,a+2,a+2,b,b+2,a+1,a+3,b+1,a+3,b+3,b+1);
+        capIndices.push(a+2,b+2,a+3,a+3,b+2,b+3,a,b,a+2,a+2,b,b+2,a+1,a+3,b+1,a+3,b+3,b+1);
+      }
+      function wallMesh(positions,texcoords,indices,material){
+        const geo=new THREE.BufferGeometry();
+        geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+        geo.setAttribute('uv',new THREE.Float32BufferAttribute(texcoords,2));
+        geo.setIndex(indices);geo.computeVertexNormals();
+        const mesh=new THREE.Mesh(geo,material);
+        mesh.castShadow=true;mesh.receiveShadow=true;
+        return mesh;
+      }
+      wallGrp.add(wallMesh(sides,uv,sideIndices,concreteMaterial));
+      wallGrp.add(wallMesh(caps,capUV,capIndices,capMaterial));
+    }
+  }
+  wallGrp.visible=false;
+  scene.add(wallGrp);
+
+  // ---------- Existing-ground contour context ----------
+  const egContourPositions=[];
+  for (const r of DATA.eg_rings){
+    if (r.pts.length<2) continue;
+    const pts=densify(r.pts,7,false);
+    for (let i=0;i<pts.length-1;i++){
+      for (const p of [pts[i],pts[i+1]]){
+        const g0=gridElev(p[0],p[1]);
+        if (p[0]<G.x0 || p[0]>G.x1 || p[1]<G.z0 || p[1]>G.z1) continue;
+        egContourPositions.push(WX(p[0]),elevationY(g0.eg)+.22,MZ(p[1]));
+      }
+      // An odd endpoint is discarded rather than joining unrelated contours.
+      if ((egContourPositions.length/3)%2) egContourPositions.splice(-3);
+    }
+  }
+  const egContourMaterial=new THREE.LineBasicMaterial({
+    color:0xb2b09a,transparent:true,opacity:.15,depthWrite:false
+  });
+  const egContourGeo=new THREE.BufferGeometry();
+  egContourGeo.setAttribute('position',new THREE.Float32BufferAttribute(egContourPositions,3));
+  const egContours=new THREE.LineSegments(egContourGeo,egContourMaterial);
+  scene.add(egContours);
+
+  // ---------- Drainage ----------
+  const ditchGrp=new THREE.Group();
+  ditchGrp.name='Design drainage and design contours';
+  function drainageLine(points,lineColor){
+    const pts=densify(points,5,false),positions=[];
+    for (let i=0;i<pts.length-1;i++){
+      const a=pts[i],b=pts[i+1];
+      for (const p of [a,b]){
+        const g0=gridElev(p[0],p[1]);
+        const z=Math.max(Number.isFinite(p[2])?p[2]:g0.dz,g0.dz);
+        positions.push(WX(p[0]),elevationY(z)+.42,MZ(p[1]));
+      }
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    return new THREE.LineSegments(geo,new THREE.LineBasicMaterial({
+      color:lineColor,transparent:true,opacity:.88,depthWrite:false
+    }));
+  }
+  ditchGrp.add(drainageLine(DATA.ditch_flowline,0x60e8b1));
+  ditchGrp.add(drainageLine(DATA.ditch_edge,0x32b58c));
+
+  // ---------- Actual design isolines, extracted from the design elevation grid ----------
+  // Intersection plan positions are draped with gridElev().dz, including
+  // intermediate points, rather than reusing existing-ground contour heights.
+  const minorContours=[],majorContours=[];
+  const contourInterval=5;
+  function contourTriangle(a,b,c){
+    const low=Math.min(a[2],b[2],c[2]),high=Math.max(a[2],b[2],c[2]);
+    for (let level=Math.ceil(low/contourInterval)*contourInterval;level<=high;level+=contourInterval){
+      const crossings=[];
+      for (const [p,q] of [[a,b],[b,c],[c,a]]){
+        if ((p[2]<level&&q[2]>=level)||(q[2]<level&&p[2]>=level)){
+          const t=(level-p[2])/(q[2]-p[2]);
+          crossings.push([lerp(p[0],q[0],t),lerp(p[1],q[1],t)]);
+        }
+      }
+      if (crossings.length!==2) continue;
+      const p=crossings[0],q=crossings[1];
+      if (Math.hypot(q[0]-p[0],q[1]-p[1])<.001) continue;
+      const output=Math.abs(level/25-Math.round(level/25))<.001?majorContours:minorContours;
+      const steps=Math.max(2,Math.ceil(Math.hypot(q[0]-p[0],q[1]-p[1])/3));
+      for (let i=0;i<steps;i++){
+        for (const t of [i/steps,(i+1)/steps]){
+          const x=lerp(p[0],q[0],t),y=lerp(p[1],q[1],t);
+          output.push(WX(x),elevationY(gridElev(x,y).dz)+.24,MZ(y));
+        }
+      }
+    }
+  }
+  for (let j=0;j<G.nz-1;j++){
+    const y0=G.z0+gH*j/(G.nz-1),y1=G.z0+gH*(j+1)/(G.nz-1);
+    for (let i=0;i<G.nx-1;i++){
+      const x0=G.x0+gW*i/(G.nx-1),x1=G.x0+gW*(i+1)/(G.nx-1);
+      const k=j*G.nx+i;
+      const a=[x0,y0,G.design[k]],b=[x1,y0,G.design[k+1]];
+      const c=[x1,y1,G.design[k+G.nx+1]],d=[x0,y1,G.design[k+G.nx]];
+      contourTriangle(a,b,c);contourTriangle(a,c,d);
+    }
+  }
+  const designContours=new THREE.Group();
+  const designContourMaterials=[];
+  for (const [positions,opacity] of [[minorContours,.17],[majorContours,.33]]){
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const material=new THREE.LineBasicMaterial({
+      color:0xc9a961,transparent:true,opacity,depthWrite:false
+    });
+    material.userData.baseOpacity=opacity;
+    designContourMaterials.push(material);
+    designContours.add(new THREE.LineSegments(geo,material));
+  }
+  ditchGrp.add(designContours);
+  ditchGrp.visible=false;
+  scene.add(ditchGrp);
+
+  // ---------- Tank pad ----------
+  const tankGrp=new THREE.Group();
+  tankGrp.name='Water-tank pad';
+  const tankMaterials=[];
+  if (DATA.tank_pad.length>2){
+    const material=new THREE.MeshStandardMaterial({
+      color:0xa99a7e,vertexColors:true,roughness:1,map:grain,bumpMap:grain,
+      bumpScale:.10,side:THREE.DoubleSide,transparent:true,opacity:0
+    });
+    const geo=polygonSurface(DATA.tank_pad,6,(x,y)=>{
+      const g0=gridElev(x,y);
+      return elevationY(Math.max(g0.dz,g0.eg))+.45;
+    });
+    const pad=new THREE.Mesh(geo,material);
+    pad.receiveShadow=true;pad.castShadow=true;
+    tankGrp.add(pad);tankMaterials.push(material);
+    const edgePoints=densify(DATA.tank_pad,5,true);
+    const positions=edgePoints.map(p=>{
+      const g0=gridElev(p[0],p[1]);
+      return new THREE.Vector3(WX(p[0]),elevationY(Math.max(g0.dz,g0.eg))+.65,MZ(p[1]));
+    });
+    const outlineMaterial=new THREE.LineBasicMaterial({color:0xccba91,transparent:true,opacity:0,depthWrite:false});
+    tankGrp.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(positions),outlineMaterial));
+    tankMaterials.push(outlineMaterial);
+  }
+  tankGrp.visible=false;
+  scene.add(tankGrp);
+
+  // ---------- Boundary follows the same terrain morph ----------
+  {
+    const pts=densify(DATA.boundary,7,true),positions=[];
+    for (let i=0;i<pts.length;i++){
+      for (const p of [pts[i],pts[(i+1)%pts.length]]){
+        const sample=gridElev(p[0],p[1]);
+        const s={eg:elevationY(sample.eg),dz:elevationY(sample.dz)};
+        boundarySamples.push(s);
+        positions.push(WX(p[0]),s.eg+.55,MZ(p[1]));
+      }
+    }
+    boundaryGeo=new THREE.BufferGeometry();
+    boundaryGeo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const boundaryLine=new THREE.LineSegments(boundaryGeo,new THREE.LineDashedMaterial({
+      color:0xc0ab7a,transparent:true,opacity:.36,dashSize:7,gapSize:5,depthWrite:false
+    }));
+    boundaryLine.computeLineDistances();
+    boundaryLine.frustumCulled=false;
+    scene.add(boundaryLine);
+  }
+  lastMorph=-1;
+  placeTerrain(0);
+
+  // ---------- Six-phase engine ----------
+  let phaseIdx=0,phaseT=1,playing=false;
+  let displayedPhase=-1;
+  let lastRoadVisible=false,lastWallVisible=false,lastTankVisible=false;
+  const phaseButtons=[];
+  const followInput=$('follow-road');
+  const progressEnds=PH.map(ph=>Number(ph.progress_to));
+  let currentProgress=0;
+
+  function applyPhase(idx,t){
+    idx=clamp(Math.floor(idx),0,PH.length-1);
+    t=clamp(t,0,1);
+    const morph=idx<1?0:idx===1?t*.9:idx===2?.9+t*.1:1;
+    placeTerrain(morph);
+
+    roadGrp.visible=idx>=4;
+    const roadOpacity=idx<4?0:idx===4?t*.5:Math.min(1,.5+t);
+    roadMesh.material.opacity=roadOpacity;
+    stripeMaterial.opacity=roadOpacity*.94;
+    wallGrp.visible=idx>=2;
+    ditchGrp.visible=idx>=3;
+    tankGrp.visible=idx>=2;
+    for (const material of tankMaterials) material.opacity=idx<2?0:idx===2?t*.4:.85;
+    for (const material of designContourMaterials){
+      material.opacity=material.userData.baseOpacity*(idx===3?smooth(t):1);
+    }
+    egContours.visible=morph<.08;
+    egContourMaterial.opacity=.15*(1-clamp(morph/.08,0,1));
+
+    if (lastRoadVisible!==roadGrp.visible || lastWallVisible!==wallGrp.visible || lastTankVisible!==tankGrp.visible){
+      renderer.shadowMap.needsUpdate=true;
+      lastRoadVisible=roadGrp.visible;lastWallVisible=wallGrp.visible;lastTankVisible=tankGrp.visible;
+    }
+
+    const ph=PH[idx];
+    if (displayedPhase!==idx){
+      displayedPhase=idx;
+      $('ph-n').textContent=ph.id??idx+1;
+      $('ph-name').textContent=ph.name;
+      const detail=ph.detail??ph.details??'';
+      $('ph-detail').textContent=Array.isArray(detail)?detail.join(' · '):String(detail);
+      $('ph-qty').textContent=ph.qty;
+      $('phase-count').textContent=String(idx+1).padStart(2,'0')+' / '+String(PH.length).padStart(2,'0');
+      const badge=$('ph-qty');
+      badge.classList.remove('phase-change');
+      void badge.offsetWidth;
+      badge.classList.add('phase-change');
+      phaseButtons.forEach((button,i)=>{
+        button.classList.toggle('on',i===idx);
+        button.classList.toggle('done',i<idx);
+        button.setAttribute('aria-pressed',String(i===idx));
+      });
+    }
+    const previous=idx?progressEnds[idx-1]:0;
+    currentProgress=clamp(lerp(previous,progressEnds[idx],t),0,1);
+    const percentage=(currentProgress*100).toFixed(0);
+    $('trackfill').style.width=(currentProgress*100).toFixed(2)+'%';
+    $('progress-label').textContent=percentage+'%';
+    $('track').setAttribute('aria-valuenow',percentage);
+    $('track').setAttribute('aria-valuetext',ph.name+', '+percentage+' percent');
+  }
+
+  function gotoPhase(i,t=1){
+    phaseIdx=clamp(Math.floor(i),0,PH.length-1);
+    phaseT=clamp(t,0,1);
+    applyPhase(phaseIdx,phaseT);
+  }
+
+  function pausePlayback(){
+    playing=false;
+    controls.enabled=true;
+    $('play').textContent='▶ PLAY INSTALL SEQUENCE';
+  }
+
+  PH.forEach((ph,i)=>{
+    const button=document.createElement('button');
+    button.type='button';
+    const number=document.createElement('span');
+    number.className='phase-index';
+    number.textContent=String(i+1).padStart(2,'0');
+    const label=document.createElement('span');
+    label.textContent=ph.name;
+    button.append(number,label);
+    button.title=ph.name;
+    button.addEventListener('click',()=>{pausePlayback();gotoPhase(i,1);});
+    $('phasebtns').appendChild(button);
+    phaseButtons.push(button);
+  });
+
+  function scrubTo(progress){
+    pausePlayback();
+    progress=clamp(progress,0,1);
+    let idx=progressEnds.findIndex(end=>progress<=end);
+    if (idx<0) idx=PH.length-1;
+    const previous=idx?progressEnds[idx-1]:0;
+    const duration=progressEnds[idx]-previous;
+    gotoPhase(idx,duration>0?(progress-previous)/duration:1);
+  }
+  const track=$('track');
+  let scrubbing=false;
+  function scrubPointer(event){
+    const bounds=track.getBoundingClientRect();
+    scrubTo((event.clientX-bounds.left)/bounds.width);
+  }
+  track.addEventListener('pointerdown',event=>{
+    scrubbing=true;
+    track.setPointerCapture(event.pointerId);
+    scrubPointer(event);
+    event.preventDefault();
+  });
+  track.addEventListener('pointermove',event=>{if(scrubbing) scrubPointer(event);});
+  track.addEventListener('pointerup',()=>{scrubbing=false;});
+  track.addEventListener('pointercancel',()=>{scrubbing=false;});
+  track.addEventListener('keydown',event=>{
+    let next=currentProgress;
+    if (event.key==='ArrowRight'||event.key==='ArrowUp') next+=.02;
+    else if (event.key==='ArrowLeft'||event.key==='ArrowDown') next-=.02;
+    else if (event.key==='Home') next=0;
+    else if (event.key==='End') next=1;
+    else return;
+    event.preventDefault();scrubTo(next);
+  });
+  $('play').addEventListener('click',()=>{
+    if (playing){pausePlayback();return;}
+    playing=true;gotoPhase(0,.01);
+    $('play').textContent='⏸ PLAYING…';
+  });
+
+  // ---------- Idle orbit and optional road flythrough ----------
+  let userInteracted=false;
+  function stopIdle(){
+    userInteracted=true;
+    controls.autoRotate=false;
+  }
+  document.addEventListener('pointerdown',stopIdle,{capture:true,passive:true});
+  document.addEventListener('wheel',stopIdle,{capture:true,passive:true});
+  document.addEventListener('keydown',stopIdle,{capture:true});
+  controls.addEventListener('start',stopIdle);
+
+  renderer.domElement.addEventListener('pointerdown',()=>{
+    if (playing&&followInput.checked){
+      followInput.checked=false;
+      controls.enabled=true;
+    }
+  },{capture:true});
+  renderer.domElement.addEventListener('wheel',()=>{
+    if (playing&&followInput.checked){
+      followInput.checked=false;
+      controls.enabled=true;
+    }
+  },{capture:true,passive:true});
+
+  const flyPoints=spine.map(p=>{
+    const sample=gridElev(p[0],p[1]);
+    return new THREE.Vector3(WX(p[0]),elevationY(sample.dz),MZ(p[1]));
+  });
+  const flyCurve=flyPoints.length>1?new THREE.CatmullRomCurve3(flyPoints,false,'centripetal'):null;
+  if (flyCurve){
+    flyCurve.arcLengthDivisions=Math.max(600,flyPoints.length*2);
+    flyCurve.updateArcLengths();
+  }
+  const flyPosition=new THREE.Vector3(),flyAhead=new THREE.Vector3(),flyTangent=new THREE.Vector3();
+  const desiredCamera=new THREE.Vector3(),desiredTarget=new THREE.Vector3();
+
+  function updateFlythrough(dt){
+    if (!playing||!followInput.checked||!flyCurve){
+      controls.enabled=true;
+      return false;
+    }
+    controls.enabled=false;
+    controls.autoRotate=false;
+    const progress=clamp((phaseIdx+phaseT)/PH.length,0,1);
+    const u=lerp(.015,.96,progress);
+    flyCurve.getPointAt(u,flyPosition);
+    flyCurve.getPointAt(Math.min(.995,u+.035),flyAhead);
+    flyCurve.getTangentAt(u,flyTangent);
+    const sample=gridElev(flyPosition.x+cx,cz-flyPosition.z);
+    const visibleHeight=elevationY(lerp(sample.eg,sample.dz,clamp(lastMorph,0,1)));
+    desiredCamera.copy(flyPosition).addScaledVector(flyTangent,-46);
+    desiredCamera.y=Math.max(desiredCamera.y,visibleHeight)+85;
+    const cameraGround=gridElev(desiredCamera.x+cx,cz-desiredCamera.z);
+    desiredCamera.y=Math.max(desiredCamera.y,elevationY(lerp(cameraGround.eg,cameraGround.dz,lastMorph))+48);
+    desiredTarget.copy(flyAhead);
+    const aheadGround=gridElev(flyAhead.x+cx,cz-flyAhead.z);
+    desiredTarget.y=Math.max(desiredTarget.y,elevationY(lerp(aheadGround.eg,aheadGround.dz,lastMorph)))+12;
+    const ease=1-Math.exp(-dt*2.4);
+    camera.position.lerp(desiredCamera,ease);
+    controls.target.lerp(desiredTarget,ease);
+    camera.lookAt(controls.target);
+    return true;
+  }
+
+  function updateAtmosphere(){
+    scene.fog.near=fitDistance+span*.6;
+    scene.fog.far=fitDistance+span*6.5;
+    sky.scale.setScalar(camera.far*.85);
+  }
+  $('fit-site').addEventListener('click',()=>{
+    stopIdle();followInput.checked=false;controls.enabled=true;
+    fitCam();updateAtmosphere();
+  });
+
+  let last=performance.now(),phaseAccumulator=0;
+  const cameraDirection=new THREE.Vector3();
+  function tick(now){
+    requestAnimationFrame(tick);
+    const dt=Math.min(.1,(now-last)/1000);
+    last=now;
+    if (document.hidden) return;
+
+    if (playing){
+      phaseT+=dt*.35;
+      if (phaseT>=1){
+        phaseT=0;phaseIdx++;
+        if (phaseIdx>=PH.length){
+          phaseIdx=PH.length-1;phaseT=1;playing=false;
+          controls.enabled=true;
+          $('play').textContent='▶ REPLAY SEQUENCE';
+        }
+        applyPhase(phaseIdx,phaseT);
+        phaseAccumulator=0;
+      } else {
+        phaseAccumulator+=dt;
+        // Dense terrain normals update at 30 Hz; camera and rendering stay fluid.
+        if (phaseAccumulator>=1/30){
+          applyPhase(phaseIdx,phaseT);
+          phaseAccumulator=0;
+        }
+      }
+    }
+    const following=updateFlythrough(dt);
+    if (!following) controls.update(dt);
+    sky.position.copy(camera.position);
+    camera.getWorldDirection(cameraDirection);
+    const northAngle=Math.atan2(cameraDirection.x,-cameraDirection.z);
+    $('compass-arrow').style.transform='rotate('+(-northAngle*180/Math.PI).toFixed(2)+'deg)';
+    const status=following?'FOLLOW ROAD':controls.autoRotate&&!userInteracted?'SLOW ORBIT · INTERACT TO EXPLORE':'SITE OVERVIEW';
+    if ($('camera-status').textContent!==status) $('camera-status').textContent=status;
+    renderer.render(scene,camera);
+  }
+
+  applyPhase(0,1);
+  renderer.shadowMap.needsUpdate=true;
+  sky.position.copy(camera.position);
+  renderer.render(scene,camera);
+  $('loading').classList.add('hidden');
+  setTimeout(()=>$('loading').setAttribute('aria-hidden','true'),500);
+  requestAnimationFrame(tick);
+
+  addEventListener('resize',()=>{
+    camera.aspect=innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    renderer.setSize(innerWidth,innerHeight);
+    if (!userInteracted&&!playing){
+      fitCam();updateAtmosphere();
+    }
+  });
+  document.addEventListener('visibilitychange',()=>{last=performance.now();});
+
+  // Audited presentation stamps above remain fixed: never calculate quantities
+  // from the terrain, crown, display exaggeration or atmospheric geometry.
+  window.__viz={
+    terrain,roadGrp,wallGrp,ditchGrp,tankGrp,gotoPhase,applyPhase,S,scene,camera,controls,
+    ST,gridElev,placeTerrain,fitCam,designContours,stamps:auditedStamps,renderer
+  };
+}
+</script>
+</body>
+</html>

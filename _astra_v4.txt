@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diamond Heights · Visual Layer Upgrade</title>
+<style>
+  *{box-sizing:border-box}
+  :root{color-scheme:dark}
+  html,body{margin:0;min-height:100%;background:#0b0d12;color:#e8eaf0;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  body{padding:clamp(24px,5vw,72px);background:radial-gradient(ellipse at 15% 0%,#252536 0%,#10151d 32%,#0b0d12 72%)}
+  main{max-width:960px;margin:auto}
+  .overline{color:#ffb86b;letter-spacing:2.4px;text-transform:uppercase;font-size:10px;font-weight:800}
+  h1{font-size:clamp(28px,4vw,48px);font-weight:600;line-height:1.15;letter-spacing:-1.4px;margin:16px 0}
+  .intro{max-width:710px;color:#b7c2cf;font-size:15px}
+  .card{margin:28px 0;padding:28px;background:linear-gradient(145deg,#1a232ed9,#111820e6);border:1px solid #8ca3bb35;border-radius:18px;box-shadow:0 24px 80px #0006;backdrop-filter:blur(20px)}
+  label{display:block;font-weight:700;margin-bottom:10px}
+  input[type=file]{width:100%;padding:16px;color:#c7d0db;border:1px dashed #8ca3bb50;border-radius:10px;background:#0b0f15}
+  input::file-selector-button{border:1px solid #a6bed244;border-radius:7px;padding:10px 16px;margin-right:16px;background:#202c38;color:#eef5f9;cursor:pointer}
+  .hint{color:#8c9dae;font-size:12px;margin-top:10px}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+  button{font:inherit;font-weight:750;border:1px solid #a6bed244;border-radius:10px;padding:12px 20px;background:#202c38;color:#eef5f9;cursor:pointer;transition:transform .2s,background .2s}
+  button:first-child{background:#ffb86b;color:#17130f;border-color:#ffb86b}
+  button:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.12)}
+  button:disabled{opacity:.36;cursor:not-allowed}
+  button:focus-visible,input:focus-visible{outline:2px solid #8ddfc0;outline-offset:4px}
+  #status{margin-top:18px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#bac7d6}
+  #status.ok{color:#8ddfc0}
+  #status.error{color:#ffb4aa}
+  iframe{display:block;width:100%;height:800px;max-height:90vh;border:1px solid #8ca3bb55;border-radius:14px;background:#0b0d12}
+  iframe[hidden]{display:none}
+  .footnote{color:#8192a5;font-size:11px;margin:28px 0}
+  .checklist{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none;color:#cbd5e0;font-size:12px}
+  .checklist li{padding:12px;background:#ffffff04;border:1px solid #ffffff0e;border-radius:9px}
+  .checklist li:before{content:"✓";color:#72d5b0;margin-right:8px}
+  @media(max-width:600px){.card{padding:18px}.checklist{grid-template-columns:1fr}iframe{height:700px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="overline">IVR · Diamond Heights</div>
+  <h1>A visual upgrade.<br>Not a data rewrite.</h1>
+  <p class="intro">The audited DATA block is too large to reproduce intact in a single response. This local builder reads your original HTML file and downloads a complete, upgraded single-file page, preserving the entire DATA declaration and gridElev() helper verbatim.</p>
+  <div class="card">
+    <label for="source">Select the original, working visualizer HTML</label>
+    <input id="source" type="file" accept=".html,.htm,text/html">
+    <p class="hint">Processing happens in this browser. The selected file is not uploaded. Previewing the result loads only the supplied Three.js 0.160.0 modules from unpkg.</p>
+    <div class="actions">
+      <button id="download" disabled>Download upgraded page</button>
+      <button id="preview" disabled>Preview upgraded page</button>
+    </div>
+    <div id="status" role="status" aria-live="polite">Waiting for the original single-file page.</div>
+  </div>
+  <ul class="checklist">
+    <li>Shared-vertex, higher-resolution terrain</li>
+    <li>Gradient sky and grounded surround</li>
+    <li>Warm sun and soft shadows</li>
+    <li>Crowned asphalt and edge strips</li>
+    <li>Continuous concrete wall and cap</li>
+    <li>Draped design-surface contours</li>
+    <li>Full-length phase labels</li>
+    <li>Verbatim audited quantity stamps</li>
+    <li>Original six-phase engine</li>
+  </ul>
+  <iframe id="viewport" title="Upgraded Diamond Heights visualizer preview" sandbox="allow-scripts allow-pointer-lock" hidden></iframe>
+  <p class="footnote">The exported page contains its own geometry, styling, procedural textures, controls, and rendering code. No texture downloads or additional libraries are required.</p>
+</main>
+
+<script id="visual-style" type="text/plain">
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{color-scheme:dark;--bg:#0b0d12;--ink:#e8eaf0;--muted:#a6b3c5;--amber:#ffb86b;--green:#3ddc97;--edge:rgba(173,193,218,.18);--footer:38px}
+  html,body{height:100%;overflow:hidden}
+  body{background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  button,summary{font:inherit;-webkit-tap-highlight-color:transparent}
+  button{touch-action:manipulation}
+  #app{position:fixed;inset:0}
+  #app canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}
+  .hdr{position:fixed;top:0;left:0;right:0;padding:21px 24px 35px;background:linear-gradient(180deg,rgba(11,13,18,.94),rgba(11,13,18,.6) 55%,transparent);pointer-events:none;z-index:10}
+  .hdr h1{font-size:clamp(16px,1.35vw,22px);letter-spacing:-.55px;line-height:1.35;font-weight:600;text-shadow:0 2px 16px #000b}
+  .hdr h1 b{color:var(--amber);font-weight:800}
+  .hdr p{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .hdr .chip{display:inline-flex;align-items:center;min-height:23px;white-space:nowrap;background:rgba(16,24,35,.62);border:1px solid rgba(165,186,214,.18);border-radius:6px;padding:3px 9px;font-size:10px;letter-spacing:.15px;color:#c1cdd9;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .panel,.legend,.stamp,.flags{background:linear-gradient(147deg,rgba(27,36,49,.8),rgba(15,20,28,.86));border:1px solid var(--edge);box-shadow:0 22px 70px #0005,inset 0 1px rgba(fff,fff,fff,.03);backdrop-filter:blur(24px) saturate(125%);-webkit-backdrop-filter:blur(24px) saturate(125%)}
+  .panel{position:fixed;left:24px;bottom:calc(var(--footer) + 20px);width:398px;max-width:calc(100vw - 48px);border-radius:18px;padding:20px;z-index:10;max-height:calc(100dvh - var(--footer) - 162px);overflow-y:auto;overscroll-behavior:contain}
+  .panel:before{content:"INSTALL SEQUENCE";display:block;font-size:9px;letter-spacing:1.9px;font-weight:750;color:#b1c1d2;margin-bottom:13px}
+  .phase-title{display:flex;align-items:center;gap:14px;min-height:40px}
+  .phase-title .n{display:flot;float:none;min-width:42px;width:42px;height:42px;line-height:40px;text-align:center;font-size:24px;font-variant-numeric:tabular-nums;font-weight:800;color:var(--amber);border:1px solid rgba(255,184,107,.26);background:rgba(255,184,107,.075);border-radius:11px;flex-shrink:0}
+  .phase-title h2{font-size:16px;line-height:1.35;letter-spacing:-.2px}
+  .phase-detail{color:var(--muted);font-size:12px;line-height:1.7;margin-top:14px;min-height:41px}
+  .qty{display:inline-flex;align-items:center;margin-top:14px;background:linear-gradient(120deg,rgba(255,184,107,.12),rgba(255,184,107,.035));border:1px solid rgba(255,184,107,.25);color:#ffcc94;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:750;legend-spacing:.2px;font-variant-numeric:tabular-nums;max-width:100%}
+  .track{margin-top:22px;height:6px;background:rgba(141,165,194,.12);border-radius:6px;position:relative;cursor:pointer}
+  .track:before{content:"";position:absolute;inset:-9px 0}
+  .track .fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#ffb86b,#96d6b3);box-shadow:0 0 18px #fbc39123;transition:width .3s}
+  .track .fill:after{content:"";position:absolute;left:100%;margin-left:-4px;width:8px;height:8px;border-radius:100%;background:#abdfc4;top:-1px}
+  .track .fill{position:relative}
+  .phases{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:16px}
+  .phases button{min-width:0;background:rgba(118,156,190,.055);border:1px solid rgba(141,165,194,.12);color:#acbacc;border-radius:8px;padding:8px 7px;font-size:10.5px;font-weight:550;line-height:1.35;white-space:normal;overflow-wrap:normal;text-overflow:clip;cursor:pointer;transition:border-color .22s,background .22s,color .22s,transform .22s;min-height:41px}
+  .phases button:hover{background:rgba(219,234,253,.075);transform:translateY(-1px);color:#edf4fb}
+  .phases button.on{background:linear-gradient(120deg,rgba(255,184,107,.15),rgba(255,184,107,.06));border-color:rgba(255,184,107,.7);color:#ffd19d}
+  .phases button.done{color:#7ddbb9;border-color:rgba(61,220,151,.3)}
+  .play{margin-top:13px;width:100%;background:linear-gradient(115deg,#ffc082,#efad70);color:#22190e;border:1px solid #ffc08283;border-radius:9px;padding:10px;font-weight:800;font-size:12px;cursor:pointer;letter-spacing:.85px;box-shadow:0 6px 20px #ffb86b0c;transition:filter .2s,transform .2s}
+  .play:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .play:active{transform:translateY(0)}
+  :focus-visible{outline:2px solid #b8e8da;outline-offset:4px}
+  .legend{position:fixed;right:24px;top:112px;border-radius:13px;padding:10px 15px;z-index:10;font-size:11px;min-width:207px}
+  .legend div{display:flex;align-items:center;gap:9px;margin:7px 0;color:#c5d1df}
+  .sw{width:10px;height:10px;border-radius:3px;display:inline-block;box-shadow:0 0 12px #c5e3f314,inset 0 1px #ffffff24}
+  .stamp{position:fixed;right:24px;bottom:calc(var(--footer) + 20px);width:271px;border-radius:16px;padding:17px 18px;z-index:10}
+  .stamp h3{font-size:10px;text-transform:uppercase;letter-spacing:1.05px;color:#a0b2c7;margin-bottom:11px;font-weight:700}
+  .stamp .row{display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.7;padding:4px 0;border-bottom:1px solid rgba(165,197,223,.07)}
+  .stamp .row:last-child{border-bottom:none}
+  .stamp .row b{color:#95e2c3;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:650}
+  .flags{position:fixed;left:24px;top:112px;width:342px;max-width:calc(100vw - 48px);font-size:10.5px;color:#afbace;line-height:1.75;z-index:11;border-radius:11px;padding:9px 12px;pointer-events:auto;max-height:calc(100dvh - 190px);overflow-y:auto}
+  .flags summary{cursor:pointer;user-select:none;letter-spacing:1.2px;font-size:8px;font-weight:800;color:#c1cdde;outline:none}
+  .flags p{padding-top:9px;color:#a9b8ca;letter-spacing:0;font-size:10.5px}
+  .view-tools{position:fixed;right:24px;top:335px;display:flex;gap:10px;align-items:center;z-index:10}
+  .view-tools button{border:1px solid var(--edge);background:rgba(22,29,39,.7);color:#c0cfde;border-radius:8px;padding:8px 12px;font-size:10px;cursor:pointer;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:background .2s}
+  .view-tools button:hover{background:#2c3c4d}
+  #idle-state{color:#a7b7c9;font-size:9px;letter-spacing:1.1px;text-transform:uppercase;text-shadow:0 2px 12px #000}
+  #idle-state:before{content:"";display:inline-block;width:4px;height:4px;border-radius:50%;background:#aedfc7;margin-right:7px;vertical-align:2px}
+  .gesture-hint{position:fixed;left:50%;bottom:calc(var(--footer) + 23px);transform:translateX(-50%);color:#adbcce;background:#10161ddc;border:1px solid #99adc222;border-radius:30px;padding:6px 13px;font-size:9px;letter-spacing:.3px;z-index:8;white-space:nowrap;pointer-events:none;backdrop-filter:blur(15px)}
+  footer{position:fixed;left:0;right:0;bottom:0;min-height:var(--footer);display:flex;justify-content:center;align-items:center;background:#0b0f17fa;border-top:1px solid rgba(156,178,208,.17);color:#aebbcc;font-size:10px;line-height:1.6;text-align:center; padding:8px 17px calc(8px + env(safe-area-inset-bottom,0px));z-index:40}
+  .phase-changed .phase-title,.phase-changed .phase-detail,.phase-changed .qty{animation:phase-enter .5s cubic-bezier(.16,1,.3,1) both}
+  .phase-changed .phase-detail{animation-delay:25ms}
+  .phase-changed .qty{animation-delay:50ms}
+  @keyframes phase-enter{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .boot{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#111924ef;border:1px solid #ffffff20;border-radius:12px;padding:17px 24px;z-index:50;color:#bfc9d8;font-size:12px;max-width:85vw;text-align:center;box-shadow:0 16px 80px #0008}
+  .boot:before{content:"";display:block;width:28px;height:28px;border:2px solid #ffb86b22;border-top-color:#ffb86b;border-radius:50%;margin:0 auto 13px;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(1turn)}}
+  .boot.failed:before{display:none}
+  @media(max-width:1040px){.stamp{width:236px}.panel{width:350px}.gesture-hint{display:none}.legend{min-width:190px}.flags{width:310px}.phases button{font-size:10px}}
+  @media(max-width:760px){:root{--footer:64px}.hdr{padding:13px 15px 25px}.hdr h1{font-size:16px}.hdr p{gap:5px;margin-top:7px}.hdr .chip{font-size:8px;padding:2px 7px;min-height:18px}.panel{left:12px;bottom:calc(var(--footer) + 12px);width:344px;max-width:calc(100vw - 24px);padding:14px;border-radius:15px;max-height:45vh}.panel:before{margin-bottom:9px}.phase-title .n{height:34px;width:34px;min-width:34px;line-height:31px;font-size:21px}.phase-title h2{font-size:15px}.phase-detail{font-size:11px;margin-top:10px;line-height:1.5;min-height:33px}.qty{margin-top:10px;font-size:11px}.track{margin-top:15px}.phases{margin-top:12px;gap:6px}.phases button{padding:5px;min-height:34px;font-size:9px}.play{margin-top:10px;padding:8px;font-size:10px}.stamp,.legend{display:none}.flags{top:94px;left:15px;width:286px;max-width:calc(100vw - 145px);padding:6px 10px}.flags p{font-size:10px;max-height:24vh;overflow:auto}.view-tools{top:94px;right:15px;align-items:flex-end;flex-direction:column;gap:7px}#idle-state{font-size:7px}.view-tools button{font-size:9px;padding:6px 8px}footer{font-size:8px; padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px))}}
+  @media(max-height:700px) and (min-width:761px){.panel{padding:14px;width:340px;max-height:72vh}.phase-detail{min-height:33px;line-height:1.5;margin-top:10px}.qty{margin-top:8px}.track{margin-top:17px}.phases button{min-height:36px;font-size:9.5px}.panel:before{margin-bottom:8px}.flags{width:310px}.stamp{padding:12px 14px}.stamp .row{padding:3px 0}.view-tools{top:317px}}
+  @media(prefers-reduced-motion:reduce){*.phase-changed *,button,.track .fill{animation:none!important;transition:none!important}}
+</script>
+
+<script id="visual-markup" type="text/plain">
+<div id="app"></div>
+<div id="boot" class="boot" role="status">Preparing the design-model presentation…</div>
+<header class="hdr">
+  <h1><b>IVR</b> · Diamond Heights Subdivision — Earthwork Visualizer</h1>
+  <p><span class="chip">Rockford Bay Rd, Kootenai County, ID</span><span class="chip">ONYX 5 LLC</span><span class="chip">4 lots · 6.17 ac</span><span class="chip">Built from the Werx design model</span></p>
+</header>
+<details class="flags">
+  <summary>PILOT DATA NOTES</summary>
+  <p>DATA NOTES — Alignment, pavement edge, contours, ditches, wall and tank pad from the Werx design-model export (exact). EG surface interpolated from existing-ground contours. C-6/C-7 overlap conflict carried per cutfill package. Quantities stamped = audited MC p50 values, NOT recomputed from this surface.</p>
+</details>
+<div class="legend">
+  <div><span class="sw" style="background:#6d5b42"></span>Existing ground</div>
+  <div><span class="sw" style="background:#565d6b"></span>Roadway (design)</div>
+  <div><span class="sw" style="background:#ffb86b"></span>Retaining wall</div>
+  <div><span class="sw" style="background:#3ddc97"></span>Ditches / drainage</div>
+  <div><span class="sw" style="background:#c9a961"></span>Design contours</div>
+</div>
+<div class="view-tools"><button id="fit-view" type="button">Fit site ↗</button><span id="idle-state">Idle orbit</span></div>
+<div class="panel">
+  <div class="phase-title"><span class="n" id="ph-n">1</span><h2 id="ph-name">Clear & Grub</h2></div>
+  <div class="phase-detail" id="ph-detail"></div>
+  <div><span class="qty" id="ph-qty"></span></div>
+  <div class="track" id="track" role="slider" tabindex="0" aria-label="Current phase progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="fill" id="trackfill" style="width:0%"></div></div>
+  <div class="phases" id="phasebtns" aria-label="Construction phases"></div>
+  <button class="play" id="play" type="button">▶ PLAY INSTALL SEQUENCE</button>
+</div>
+<div class="stamp">
+  <h3>Earthwork summary (audited p50)</h3>
+  <div class="row"><span>Cut</span><b>12,805 CY</b></div>
+  <div class="row"><span>Fill + wall backfill</span><b>1,746 CY</b></div>
+  <div class="row"><span>Net export</span><b>11,201 CY</b></div>
+  <div class="row"><span>Road</span><b>2,114 LF</b></div>
+  <div class="row"><span>Pavement</span><b>5,918 SY</b></div>
+  <div class="row"><span>Wall</span><b>19.13' max</b></div>
+</div>
+<div class="gesture-hint">Drag to orbit · Scroll to zoom · Right-drag to pan</div>
+<footer>IVR Excavation · geometry from the Werx design model (exact) · quantities from audited takeoff package · for client presentation</footer>
+</script>
+
+<script id="visual-runtime" type="text/plain">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+/*__AUDITED_DATA__*/
+
+const PH = DATA.phases;
+const VSCALE = 2.2, ZBASE = 2220;
+const ST = DATA.stations;
+const N = ST.length;
+const spine = DATA.spine;
+const ring = DATA.pavement_ring;
+const egRings = DATA.eg_rings;
+
+let minX=1e9,maxX=-1e9,minZ=1e9,maxZ=-1e9;
+for(const c of ST){minX=Math.min(minX,c.x);maxX=Math.max(maxX,c.x);minZ=Math.min(minZ,c.y);maxZ=Math.max(maxZ,c.y);}
+for(const p of ring){minX=Math.min(minX,p[0]);maxX=Math.max(maxX,p[0]);minZ)Math.min(minZ,p[1]);maxZ=Math.max(maxZ,p[1]);}
+
+/* Coordinate transforms remain in the original model frame. */
+const cx=(minX+maxX)/2, cz=(minZ+maxZ)/2;
+const span=Math.max(maxX-minX,maxZ-minZ);
+const WX=v=>v-cx, WZ=v=>v-cz;
+const MZ=y=>-(y-cz);
+
+/*__G_BINDING__*/
+/*__GRID_HELPER__*/
+
+const clamp=THREE.MathUtils.clamp;
+const mix=THREE.MathUtils.lerp;
+const reducedMotion=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+let minElevation=Infinity,maxElevation=-Infinity;
+for(let i=0;i<G.eg.length;i++){
+  minElevation=Math.min(minElevation,G.eg[i],G.design[i]);
+  maxElevation=Math.max(maxElevation,G.eg[i],G.design[i]);
+}
+for(const p of DATA.wall_daylight) maxElevation=Math.max(maxElevation,p[2]);
+for(const p of DATA.tank_pad) maxElevation=Math.max(maxElevation,p[2]);
+
+const siteBounds=new THREE.Box3(
+  new THREE.Vector3(WX(G.x0),(minElevation-ZBASE)*VSCALE,MZ(G.z1)),
+  new THREE.Vector3(WX(G.x1),(maxElevation-ZBASE)*VSCALE+1,MZ(G.z0))
+);
+const siteSphere=siteBounds.getBoundingSphere(new THREE.Sphere());
+const siteCenter=siteSphere.center;
+const siteR=siteSphere.radius;
+const groundY=siteBounds.min.y-14;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x0b0d12);
+scene.fog=new THREE.Fog(0x0b0d12,siteR*4,siteR*11);
+
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,1,siteR*50);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.1;
+document.getElementById('app').appendChild(renderer.domElement);
+renderer.domElement.tabIndex=0;
+renderer.domElement.setAttribute('aria-label','Diamond Heights three-dimensional terrain model');
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.06;
+controls.maxPolarAngle=Math.PI*.465;
+controls.minDistance=80;
+controls.maxDistance=siteR*12;
+controls.zoomSpeed=.8;
+controls.panSpeed=.8;
+controls.autoRotate=false;
+controls.autoRotateSpeed=.12;
+
+function fitCam(){
+  const R=siteSphere.radius;
+  const center=siteSphere.center;
+  const vfov=camera.fov*Math.PI/180;
+  const hfov=2*Math.atan(Math.tan(vfov/2)*camera.aspect);
+  const dist=R/Math.sin(Math.min(vfov,hfov)/2)*1.18;
+  const el=32*Math.PI/180,az=-47*Math.PI/180;
+  const dir=new THREE.Vector3(Math.sin(az)*Math.cos(el),Math.sin(el),Math.cos(az)*Math.cos(el));
+  controls.autoRotate=false;
+  controls.maxDistance=Math.max(siteR*12,dist*2.25);
+  camera.far=Math.max(siteR*50,dist*10);
+  camera.position.copy(center).addScaledVector(dir,dist);
+  controls.target.copy(center);
+  camera.lookAt(center);
+  camera.updateProjectionMatrix();
+  controls.update();
+  controls.saveState();
+}
+
+scene.add(new THREE.HemisphereLight(0xadcff2,0x554430,.75));
+const sun=new THREE.DirectionalLight(0xffd4a5,2.8);
+sun.position.copy(siteCenter).addMappedVector;
+sun.position.copy(siteCenter).add(new THREE.Vector3(-.82,1.06,.65).normalize().multiplyScalar(siteR*3.2));
+sun.target.position.copy(siteCenter);
+sun.castShadow=true;
+const shadowSize=Math.min(renderer.capabilities.maxTextureSize,innerWidth<760?2048:4096);
+sun.shadow.mapSize.set(shadowSize,shadowSize);
+sun.shadow.bias=-.00006;
+sun.shadow.normalBias=.27;
+sun.shadow.radius=2.4;
+scene.add(sun,sun.target);
+scene.updateMatrixWorld(true);
+sun.shadow.updateMatrices(sun);
+{
+  const box=siteBounds.clone().applyMatrix4(sun.shadow.camera.matrixWorldInverse);
+  const pad=siteR*.08;
+  Object.assign(sun.shadow.camera,{
+    left:box.min.x-pad,right:box.max.x+pad,bottom:box.min.y-pad,top:box.max.y+pad,
+    near:Math.max(1,-box.max.z-pad),
+    far:-box.min.z+pad*4
+  });
+  sun.shadow.camera.updateProjectionMatrix();
+}
+const fillL=new THREE.DirectionalLight(0x96c2ed,.9);
+fillL.position.copy(siteCenter).add(new THREE.Vector3(siteR,-.14*siteR,-siteR));
+scene.add(fillL);
+
+const skyMaterial=new THREE.ShaderMaterial({
+  side:THREE.BackSide,depthWrite:false,fog:false,
+  uniforms:{
+    zenith:{value:new THREE.Color(0x0b1120)},
+    horizon:{value:new THREE.Color(0x253449)},
+    lower:{value:new THREE.Color(0x0b0d12)},
+    sunDirection:{value:new THREE.Vector3().subVectors(sun.position,sun.target.position).normalize()},
+    warmth:{value:new THREE.Color(0x5c4942)}
+  },
+  vertexShader:`
+    varying vec3 vSketchSkyDirection;
+    void main(){
+      vSketchSkyDirection=position;
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
+    }
+  `,
+  fragmentShader:`
+    uniform vec3 zenith,horizon,lower,sunDirection,warmth;
+    varying vec3 vSketchSkyDirection;
+    void main(){
+      vec3 d=normalize(vSketchSkyDirection);
+      vec3 c=mix(horizon,zenith,smoothstep(0.0,0.65,max(d.y,0.0)));
+      c=mix(lower,c,smoothstep(-0.12,0.08,d.y));
+      float imageGlow=pow(max(dot(d,sunDirection),0.0),24.0);
+      c+=warmth*imageGlow._____REPLACE_____;
+      gl_FragColor=vec4(c,1.0);
+      #include <colorspace_fragment>
+    }
+  `
+});
+skyMaterial.fragmentShader=skyMaterial.fragmentShader.replace("imageGlow._____REPLACE_____","imageGlow*0.18");
+const sky=new THREE.Mesh(new THREE.SphereGeometry(siteR*22,48,24),skyMaterial);
+sky.name='Theme gradient sky';
+sky.position.copy(siteCenter);
+sky.renderOrder=-50;
+scene.add(sky);
+
+const ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(siteR*48,siteR*48,1,1),
+  new THREE.MeshStandardMaterial({color:0x1e2521,roughness:1,metalness:0})
+);
+ground.rotation.x=-Math.PI/2;
+ground.position.set(siteCenter.x,groundY,siteCenter.z);
+ground.receiveShadow=true;
+ground.name='Fog-swallowed surrounding ground';
+scene.add(ground);
+
+/* Deterministic procedural appearance. None of these functions change DATA. */
+function hash2(ix,iz){
+  let h=Math.imul(ix,374761393)+Math.imul(iz,668265263);
+  h=Math.imul(h^(h>>>13),1274126177);
+  return ((h^(h>>>16))>>>0)/4294967295;
+}
+function noise2(x,z){
+  const ix=Math.floor(x),iz=Math.floor(z);
+  let tx=x-ix,tz=z-iz;
+  tx=tx*tx*(3-2*tx);tz=tz*tz*(3-2*tz);
+  return mix(mix(hash2(ix,iz),hash2(ix+1,iz),tx),mix(hash2(ix,iz+1),hash2(ix+1,iz+1),tx),tz);
+}
+function fbm(x,z){return noise2(x,z)*.57+noise2(x*2.03+13,z*2.03-17)*.28+noise2(x*4.1-53,z*4.1+29)*.15;}
+function surfaceTexture(seed,base,brightness){
+  const size=128,data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const n=hash2(x+seed,y-seed);
+    const grain=(n-.5)*brightness;
+    const value=clamp(base+grain+(n>.978?-brightness*.8:0),0,255);
+    const k=(y*size+x)*4;
+    data[k]=data[k+1]=data[k+2]=value;data[k+3]=255;
+  }
+  const t=new THREE.DataTexture(data,size,size,THREE.RGBAFormat);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.magFilter=THREE.LinearFilter;
+  t.minFilter=THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps=true;
+  t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  t.needsUpdate=true;
+  return t;
+}
+const soilTexture=surfaceTexture(13,188,20);
+const asphaltTexture=surfaceTexture(131,185,40);
+const concreteTexture=surfaceTexture(739,204,22);
+
+/* Shared indexed vertices: double the supplied grid resolution on both axes. */
+const segW=(G.nx-1)*2,segH=(G.nz-1)*2;
+const columnCount=segW+1,rowCount=segH+1,vertexCount=columnCount*rowCount;
+const positions=new Float32Array(vertexCount*3);
+const uv=new Float32Array(vertexCount*2);
+const colors=new Float32Array(vertexCount*3);
+const egZ=new Float32Array(vertexCount);
+const dzZ=new Float32Array(vertexCount);
+const colorEG=new Float32Array(vertexCount*3);
+const colorDesign=new Float32Array(vertexCount*3);
+const dataX=new Float64Array(vertexCount);
+const dataZ=new Float64Array(vertexCount);
+
+const grassA=new THREE.Color(0x69714f);
+const grassB=new THREE.Color(0x4c5a45);
+const soilA=new THREE.Color(0x8d7352);
+const soilB=new THREE.Color(0xa1896a);
+const effectColor=new THREE.Color();
+let element=0;
+for(let iz=0;iz<=segH;iz++){
+  const z=mix(G.z0,G.z1,iz/segH);
+  for(let ix=0;ix<=segW;ix++,element++){
+    const x=mix(G.x0,G.x1,ix/segW);
+    const e=gridElev(x,z);
+    dataX[element]=x;
+    dataZ[element]=z;
+    egZ[element]=e.eg;
+    dzZ[element]=e.dz;
+    positions[element*3]=WX(x);
+    positions[element*3+2]=MZ(z);
+    uv[element*2]=(x-G.x0)/26;
+    uv[element*2+1]=(z-G.z0)/26;
+    const patch=fbm(x/66,z/66);
+    const small=noise2(x/9,z/9);
+    effectColor.copy(grassA).lerp(grassB,patch).lerp(soilA,clamp((noise2(x/89+7,z/89)-.27)*.9,0,.47));
+    effectColor.multiplyScalar(.93+small*.14);
+    effectColor.toArray(colorEG,element*3);
+    const influence=clamp(Math.abs(e.dz-e.eg)*.32,0,1);
+    effectColor.lerp(soilA,(influence*.92)).lerp(soilB,influence*small*.16);
+    effectColor.toArray(colorDesign,element*3);
+  }
+}
+const terrainIndex=new Uint32Array(segW*segH*6);
+{
+  let i=0;
+  for(let z=0;z<segH;z++)for(let x=0;x<segW;x++){
+    const a=z*columnCount+x,b=a+1,c=a+columnCount,d=c+1;
+    terrainIndex[i++]=a;terrainIndex[i++]=b;terrainIndex[i++]=c;
+    terrainIndex[i++]=b;terrainIndex[i++]=d;terrainIndex[i++]=c;
+  }
+}
+const terrainGeo=new THREE.BufferGeometry();
+terrainGeo.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));
+terrainGeo.setAttribute('normal',new THREE.BufferAttribute(new Float32Array(vertexCount*3),3));
+terrainGeo.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+terrainGeo.setAttribute('color',new THREE.BufferAttribute(colors,3).setUsage(THREE.DynamicDrawUsage));
+terrainGeo.setIndex(new THREE.BufferAttribute(terrainIndex,1));
+terrainGeo.boundingBox=siteBounds.clone();
+terrainGeo.boundingSphere=siteSphere.clone();
+
+let lastMorph=NaN,skirtGeo=null;
+const perimeterIndices=[];
+for(let x=0;x<=segW;x++)perimeterIndices.push(x);
+for(let z=1;z<=segH;z++)perimeterIndices.push(z*columnCount+segW);
+for(let x=segW-1;x>=0;x--)perimeterIndices.push(segH*columnCount+x);
+for(let z=segH-1;z>0;z--)perimeterIndices.push(z*columnCount);
+
+function placeTerrain(morph){
+  if(morph===lastMorph)return;
+  lastMorph=morph;
+  const p=terrainGeo.attributes.position;
+  for(let i=0;i<vertexCount;i++){
+    p.setY(i,(egZ[i]*(1-morph)+dzZ[i]*morph-ZBASE)*VSCALE);
+    const c=i*3;
+    colors[c]=mix(colorEG[c],colorDesign[c],morph);
+    colors[c+1]=mix(colorEG[c+1],colorDesign[c+1],morph);
+    colors[c+2]=mix(colorEG[c+2],colorDesign[c+2],morph);
+  }
+  p.needsUpdate=true;
+  terrainGeo.attributes.color.needsUpdate=true;
+  terrainGeo.computeVertexNormals();
+  if(skirtGeo){
+    const s=skirtGeo.attributes.position;
+    for(let i=0;i<perimeterIndices.length;i++)s.setY(i*2,p.getY(perimeterIndices[i]));
+    s.needsUpdate=true;
+    skirtGeo.computeVertexNormals();
+  }
+}
+placeTerrain(0);
+const terrain=new THREE.Mesh(terrainGeo,new THREE.MeshStandardMaterial({
+  color:0xffffff,vertexColors:true,roughness:1,metalness:0,flatShading:false,
+  side:THREE.DoubleSide,map:soilTexture,bumpMap:soilTexture,bumpScale:.065
+}));
+terrain.name='Grid-sampled EG → design terrain';
+terrain.receiveShadow=true;
+scene.add(terrain);
+
+{
+  const pos=[],col=[],index=[];
+  const base=new THREE.Color(0x232923);
+  const top=new THREE.Color(0x554a36);
+  for(let i=0;i<perimeterIndices.length;i++){
+    const n=perimeterIndices[i];
+    pos.push(positions[n*3],positions[n*3+1],positions[n*3+2],positions[n*3],groundY,positions[n*3+2]);
+    col.push(top.r,top.g,top.b,base.r,base.g,base.b);
+    const a=i*2,b=((i+1)%perimeterIndices.length)*2;
+    index.push(a,b,a+1,b,b+1,a+1);
+  }
+  skirtGeo=new THREE.BufferGeometry();
+  skirtGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  skirtGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  skirtGeo.setIndex(index);
+  skirtGeo.computeVertexNormals();
+  const skirt=new THREE.Mesh(skirtGeo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide}));
+  skirt.name='Terrained perimeter solid returned to surrounding ground';
+  skirt.receiveShadow=true;
+  scene.add(skirt);
+}
+
+/* Geometry utilities preserve every original outline coordinate in the source data. */
+function cleanPlanRing(pts){
+  const out=[];
+  for(const p of pts){
+    const last=out[out.length-1];
+    if(last&&Math.hypot(last[0]-p[0],last[1]-p[1])<1e-9)continue;
+    out.push([p[0],p[1],p[2]]);
+  }
+  if(out.length>2&&Math.hypot(out[0][0]-out.at(-1)[0],out[0][1]-out.at(-1)[1])<1e-9)out.pop();
+  return out;
+}
+const polygonRing=cleanPlanRing(ring);
+function inRing(x,z){
+  let inside=false;
+  for(let i=0,j=polygonRing.length-1;i<polygonRing.length;j=i++){
+    const a=polygonRing[i],b=polygonRing[j];
+    if(((a[1]>z)!==(b[1]>z))&&(x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0]))inside=!inside;
+  }
+  return inside;
+}
+function area2(pts){
+  let a=0;
+  for(let i=0;i<pts.length;i++){
+    const p=pts[i],q=pts[(i+1)%pts.length];
+    a+=p[0]*q[1]-q[0]*p[1];
+  }
+  return a;
+}
+
+/* A small median-split segment index for procedural crown appearance only. */
+function segmentTree(pts,closed){
+  const segments=[];
+  for(let i=0;i<pts.length-(closed?0:1);i++){
+    const a=pts[i],b=pts[(i+1)%pts.length];
+    if(Math.hypot(b[0]-a[0],b[1]-a[1])<1e-6)continue;
+    segments.push({ax:a[0],z:a[1],dx:b[0]-a[0],dz:b[1]-a[1],minX:Math.min(a[0],b[0]),maxX:Math.max(a[0],b[0]),minZ:Math.min(a[1],b[1]),maxZ:Math.max(a[1],b[1])});
+  }
+  function build(items){
+    const n={minX:Infinity,minZ:Infinity,maxX:-Infinity,maxZ:-Infinity};
+    for(const s of items){n.minX=Math.min(n.minX,s.minX);n.maxX=Math.max(n.maxX,s.maxX);n.minZ=Math.min(n.minZ,s.minZ);n.maxZ=Math.max(n.maxZ,s.maxZ);}
+    if(items.length<=8){n.items=items;return n;}
+    const horizontal=n.maxX-n.minX>n.maxZ-n.minZ;
+    items.sort((a,b)=>horizontal?(a.minX+a.maxX)-(b.minX+b.maxX):(a.minZ+a.maxZ)-(b.minZ+b.maxZ));
+    const mid=items.length>>1;
+    n.left=build(items.slice(0,mid));n.right=build(items.slice(mid));
+    return n;
+  }
+  const root=build(segments);
+  return function distance(x,z){
+    let best=Infinity;
+    function boxDist(n){
+      const dx=Math.max(n.minX-x,0,x-n.maxX),dz=Math.max(n.minZ-z,0,z-n.maxZ);
+      return dx*dx+dz*dz;
+    }
+    function visit(n){
+      if(boxDist(n)>=best)return;
+      if(n.items){
+        for(const s of n.items){
+          const t=clamp(((x-s.ax)*s.dx+(z-s.z)*s.dz)/(s.dx*s.dx+s.dz*s.dz),0,1);
+          const dx=x-s.ax-t*s.dx,dz=z-s.z-t*s.dz;
+          best=Math.min(best,dx*dx+dz*dz);
+        }
+      }else{
+        const left first=boxDist(n.left)<=boxDist(n.right);
+        if(left first){visit(n.left);visit(n.right);}
+        else{visit(n.right);visit(n.left);}
+      }
+    }
+    visit(root);
+    return Math.sqrt(best);
+  };
+}
+const edgeDistance=segmentTree(polygonRing,true);
+const spineDistance=segmentTree(spine,false);
+function crownFeet(x,z){
+  const e=edgeDistance(x,z),c=spineDistance(x,z);
+  const t=e/Math.max(1e-6,e+c);
+  return .18*Math.sin(t*Math.PI*.5);
+}
+function roadHeight(x,z){
+  return (gridElev(x,z).dz-ZBASE)*VSCALE+.25+.018*crownFeet(x,z)+crownFeet(x,z)*VSCALE;
+}
+
+/* Conforming subdivision: every shared edge is split consistently. */
+function sampledPolygon(pts,maxEdge,heightFunction){
+  const verts=cleanPlanRing(pts);
+  const shapePoints=verts.map(p=>new THREE.Vector2(p[0],p[1]));
+  let faces=THREE.ShapeUtils.triangulateShape(shapePoints,[]);
+  for(let pass=0;pass<19;pass++){
+    const mids=new Map();
+    const limit=maxEdge*maxEdge;
+    function mark(a,b){
+      const key=a<b?`${a}:${b}`:`${b}:${a}`;
+      if(mids.has(key))return;
+      const p=verts[a],q=verts[b],dx=p[0]-q[0],dz=p[1]-q[1];
+      if(dx*dx+dz*dz>limit){
+        mids.set(key,verts.length);
+        verts.push([(p[0]+q[0])*.5,(p[1]+q[1])*.5,0]);
+      }
+    }
+    for(const [a,b,c] of faces){mark(a,b);mark(b,c);mark(c,a);}
+    if(!mids.size)break;
+    const next=[];
+    const mid=(a,b)=>mids.get(a<b?`${a}:${b}`:`${b}:${a}`);
+    for(const [a,b,c] of faces){
+      const ab=mid(a,b),bc=mid(b,c),ca=mid(c,a);
+      const mask=(ab!==undefined?1:0)|(bc!==undefined?2:0)|(ca!==undefined?4:0);
+      switch(mask){
+        case 0:next.push([a,b,c]);break;
+        case 1:next.push([a,ab,c],[ab,b,c]);break;
+        case 2:next.push([a,b,bc],[a,bc,c]);break;
+        case 3:next.push([ab,b,bc],[a,ab,bc],[a,bc,c]);break;
+        case 4:next.push([a,b,ca],[ca,b,c]);break;
+        case 5:next.push([a,ab,ca],[ab,b,c],[ab,c,ca]);break;
+        case 6:next.push([bc,c,ca],[a,b,bc],[a,bc,ca]);break;
+        case 7:next.push([a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]);break;
+      }
+    }
+    faces=next;
+    if(faces.length>600000)throw Error('Surface tessellation exceeded the presentation mesh budget.');
+  }
+  const g=new THREE.BufferGeometry();
+  const p=new Float32Array(verts.length*3),t=new Float32Array(verts.length*2);
+  for(let i=0;i<verts.length;i++){
+    const [x,z]=verts[i];
+    p[i*3]=WX(x);p[i*3+1]=heightFunction(x,z);p[i*3+2]=MZ(z);
+    t[i*2]=x/8;t[i*2+1]=z/8;
+  }
+  const indices=[];
+  for(let f of faces){
+    const a=verts[f[0]],b=verts[f[1]],c=verts[f[2]];
+    if((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0)f=[f[0],f[2],f[1]];
+    indices.push(...f);
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));
+  g.setAttribute('uv',new THREE.BufferAttribute(t,2));
+  g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();
+  return g;
+}
+function densify(pts,spacing,closed=false){
+  const out=[];
+  for(let i=0;i<pts.length-(closed?0:1);i++){
+    const a=pts[i],b=pts[(i+1)%pts.length];
+    const count=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/spacing));
+    for(let k=0;k<count;k++){
+      const t=k/count;
+      out.push([mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2]??0,b[2]??0,t)]);
+    }
+  }
+  if(!closed&&pts.length)out.push([...pts.at(-1)]);
+  return out;
+}
+function planNormal(pts,i,closed){
+  const p=pts[i];
+  const a=pts[closed?(i+pts.length-1)%pts.length:Math.max(0,i-1)];
+  const b=pts[closed?(i+1)%pts.length:Math.min(pts.length-1,i+1)];
+  let ax=p[0]-a[0],az=p[1]-a[1],bx=b[0]-p[0],bz=b[1]-p[1];
+  let al=Math.hypot(ax,az),bl=Math.hypot(bx,bz);
+  if(al<1e-8){ax=bx;az=bz;al=bl;}
+  if(bl<1e-8){bx=ax;bz=az;bl=al;}
+  ax/=al||1;az/=al||1;bx/=bl||1;bz/=bl||1;
+  let nx=-az-bz,nz=ax+bx;
+  const n=Math.hypot(nx,nz);
+  if(n<.001){nx=-bz;nz=bx;}else{nx/=n;nz/=n;}
+  const determinant=Math.max(.5,nx*(-bz)+nz*bx);
+  return [nx/determinant,nz/determinant];
+}
+function flatRibbon(pts,width,heightFunc,{closed=false,offset=0,clipToPavement=false}={}){
+  const p=[],uv=[],indices=[];
+  let length=0;
+  for(let i=0;i<pts.length;i++){
+    const [nx,nz]=planNormal(pts,i,closed),q=pts[i];
+    if(i)length+=Math.hypot(q[0]-pts[i-1][0],q[1]-pts[i-1][1]);
+    for(const side of [-1,1]){
+      const k=offset+side*width*.5,x=q[0]+nx*k,z=q[1]+nz*k;
+      p.push(WX(x),heightFunc(x,z),MZ(z));
+      uv.push(length/4,side>0?1:0);
+    }
+  }
+  for(let i=0;i<pts.length-(closed?0:1);i++){
+    const a=i*2,b=((i+1)%pts.length)*2;
+    for(const tri of [[a,a+1,b],[a+1,b+1,b]]){
+      if(clipToPavement){
+        let x=0,z=0;
+        for(const t of tri){x+=p[t*3]+cx;z+=-p[t*3+2]+cz;}
+        if(!inRing(x/3,z/3))continue;
+      }
+      indices.push(...tri);
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  g.setIndex(indices);g.computeVertexNormals();g.computeBoundingSphere();
+  return g;
+}
+
+const roadGrp=new THREE.Group();
+roadGrp.name='Pavement ribbon including original cul-de-sac bulb';
+const roadMaterial=new THREE.MeshStandardMaterial({
+  color:0x333945,roughness:.97,metalness:0,map:asphaltTexture,bumpMap:asphaltTexture,
+  bumpScale:.035,side:THREE.DoubleSide,transparent:true,opacity:0,flatShading:false
+});
+const roadMesh=new THREE.Mesh(sampledPolygon(polygonRing,2.45,roadHeight),roadMaterial);
+roadMesh.name='Grid-sampled crowned asphalt';
+roadMesh.receiveShadow=true;
+roadMesh.castShadow=true;
+roadGrp.add(roadMesh);
+{
+  let edgeRing=polygonRing.map(p=>[...p]);
+  if(area2(edgeRing)<0)edgeRing.reverse();
+  edgeRing=densify(edgeRing,2,false);
+  /* Re-create closed densely sampled sequence without dropping the last side. */
+  const complete=polygonRing.map(p=>[...p]);
+  if(area2(complete)<0)complete.reverse();
+  edgeRing=densify(complete,2,true);
+  const edgeMaterial=new THREE.MeshStandardMaterial({
+    color:0xcbced2,roughness:.95,metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0,
+    polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1,depthWrite:false
+  });
+  const edges=new THREE.Mesh(
+    flatRibbon(edgeRing,.32,(x,z)=>roadHeight(x,z)+.062,{
+      closed:true,offset:.95,clipToPavement:true
+    }),
+    edgeMaterial
+  );
+  edges.name='Two pavement edge strips continued around bulb';
+  edges.receiveShadow=true;
+  edges.renderOrder=2;
+  edges.onBeforeRender=()=>{edgeMaterial.opacity=roadMaterial.opacity*.9;};
+  roadGrp.add(edges);
+}
+roadGrp.visible=false;
+scene.add(roadGrp);
+
+/* Continuous ground-to-data-elevation concrete ribbon, not disconnected boxes. */
+const wallGrp=new THREE.Group();
+wallGrp.name='Continuous retaining-wall ribbon';
+{
+  const wd=densify(cleanPlanRing(DATA.wall_daylight),2.1,true);
+  const width=2.1;
+  const facePos=[],faceUV=[],faceIndex=[],capPos=[],capUV=[],capIndex=[];
+  let running=0;
+  const riser=height=>((height-ZBASE)*VSCALE);
+  for(let i=0;i<wd.length;i++){
+    const a=wd[i],n=planNormal(wd,i,true);
+    if(i)running+=Math.hypot(a[0]-wd[i-1][0],a[1]-wd[i-1][1]);
+    const top=octaveTop(a);
+    for(const side of [-1,1]){
+      const x=a[0]+n[0]*side*width*.5,z=a[1]+n[1]*side*width*.5;
+      const base=Math.min(gridElev(x,z).dz,top)-.087;
+      facePos.push(WX(x),riser(base),MZ(z),WX(x),riser(top),MZ(z));
+      faceUV.push(running/8,riser(base)/8,running/8,riser(top)/8);
+      const qx=a[0]+n[0]*side*(width*.5+.23),qz=a[1]+n[1]*side*(width*.5+.23);
+      capPos.push(WX(qx),riser(top-needleCap()),MZ(qz),WX(qx),riser(top+.08),MZ(qz));
+      capUV.push(running/8,0,running/8,1);
+    }
+  }
+  function octaveTop(a){return a[2];}
+  function needleCap(){return .18;}
+  for(let i=0;i<wd.length;i++){
+    const a=i*4,b=((i+1)%wd.length)*4;
+    faceIndex.push(a,a+1,b,a+1,b+1,b,a+2,b+2,a+3,a+3,b+2,b+3);
+    capIndex.push(a,a+1,b,a+1,b+1,b,a+2,b+2,a+3,a+3,b+2,b+3,a+1,a+3,b+1,a+3,b+3,b+1);
+  }
+  const build=(positions,uv,index)=>{
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+    g.setIndex(index);g.computeVertexNormals();g.computeBoundingSphere();
+    return g;
+  };
+  const concrete=new THREE.MeshStandardMaterial({color:0xb4b2a6,roughness:.95,metalness:0,side:THREE.DoubleSide,map:concreteTexture,bumpMap:concreteTexture,bumpScale:.045});
+  const face=new THREE.Mesh(build(facePos,faceUV,faceIndex),concrete);
+  face.castShadow=face.receiveShadow=true;
+  face.name='Variable face from graded ground to supplied wall elevations';
+  const cap=new THREE.Mesh(build(capPos,capUV,capIndex),new THREE.MeshStandardMaterial({color:0xd3cab3,roughness:.84,side:THREE.DoubleSide,bumpMap:concreteTexture,bumpScale:.028}));
+  cap.castShadow=cap.receiveShadow=true;
+  cap.name='Subtle overhanging top cap';
+  wallGrp.add(face,cap);
+}
+wallGrp.visible=false;
+scene.add(wallGrp);
+
+const ditchGrp=new THREE.Group();
+ditchGrp.name='Drainage and design contour layer';
+{
+  function brokenPaths(points,leap=147){
+    const groups=[];
+    let current=[];
+    for(let i=0;i<points.length;i++){
+      if(i&&Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1])>leap){
+        if(current.length>1)groups.push(current);
+        current=[];
+      }
+      current.push(points[i]);
+    }
+    if(current.length>1)groups.push(current);
+    return groups;
+  }
+  const material=new THREE.MeshStandardMaterial({color:0x62bb90,emissive:0x3ddc97,emissiveIntensity:.11,roughness:1,side:THREE.DoubleSide});
+  for(const path of brokenPaths(DATA.ditch_flowline)){
+    const pts=densify(path,1.6);
+    const mesh=new THREE.Mesh(flatRibbon(pts,.82,(x,z)=>(gridElev(x,z).dz-ZBASE)*VSCALE+.27),material);
+    mesh.name='Draped drainage flowline';
+    mesh.receiveShadow=true;
+    ditchGrp.add(mesh);
+  }
+  for(const path of brokenPaths(DATA.ditch_edge)){
+    const vertices=densify(path,1.6).map(p=>new THREE.Vector3(WX(p[0]),(gridElev(p[0],p[1]).dz-ZBASE)*VSCALE+.24,MZ(p[1])));
+    const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color:0x6da280,transparent:true,opacity:.55,depthWrite:false}));
+    line.name='Draped ditch edge';
+    ditchGrp.add(line);
+  }
+}
+scene.add(ditchGrp);
+ditchGrp.visible=false;
+
+/* No design-contour polylines are present in the supplied schema.
+   Extract presentation isolines from G.design, never relabel EG contours.
+   No areas, volumes, or takeoff quantities are calculated here. */
+const contoursGrp=new THREE.Group();
+contoursGrp.name='Draped isolines of supplied design grid';
+{
+  const pointsPerLevel=new Map();
+  const dx=(G.x1-G.x0)/(G.nx-1),dz=(G.z1-G.z0)/(G.nz-1);
+  function segment(x1,z1,x2,z2,level){
+    if(Math.hypot(x2-x1,z2-z1)<.0001)return;
+    const count=Math.max(1,Math.ceil(Math.hypot(x2-x1,z2-z1)/1.9));
+    if(!pointsPerLevel.has(level))pointsPerLevel.set(level,[]);
+    const vertices=pointsPerLevel.get(level);
+    for(let i=0;i<count;i++){
+      const t0=i/count,t1=(i+1)/count;
+      const ax=mix(x1,x2,t0),az=mix(z1,z2,t0),bx=mix(x1,x2,t1),bz=mix(z1,z2,t1);
+      if(inRing((ax+bx)*.5,(az+bz)*.5))continue;
+      vertices.push(WX(ax),(gridElev(ax,az).dz-ZBASE)*VSCALE+.19,MZ(az),WX(bx),(gridElev(bx,bz).dz-ZBASE)*VSCALE+.19,MZ(bz));
+    }
+  }
+  function triangle(a,b,c){
+    const low=Math.min(a[2],b[2],c[2]),high=Math.max(a[2],b[2],c[2]);
+    for(let level=Math.ceil(low/2)*2;level<high;level+=2){
+      const hit=[];
+      for(const [p,q] of [[a,b],[b,c],[c,a]]){
+        if((p[2]<=level&&q[2]>level)||(q[2]<=level&&p[2]>level)){
+          const t=(level-p[2])/(q[2]-p[2]);
+          hit.push([mix(p[0],q[0],t),mix(p[1],q[1],t)]);
+        }
+      }
+      if(hit.length===2)segment(hit[0][0],hit[0][1],hit[1][0],hit[1][1],level);
+    }
+  }
+  for(let z=0;z<G.nz-1;z++)for(let x=0;x<G.nx-1;x++){
+    const i=z*G.nx+x,ax=G.x0+x*dx,az=G.z0+z*dz;
+    const a=[ax,az,G.design[i]],b=[ax+dx,az,G.design[i+1]];
+    const c=[ax,az+dz,G.design[i+G.nx]],d=[ax+dx,az+dz,G.design[i+G.nx+1]];
+    triangle(a,b,c);triangle(b,d,c);
+  }
+  const minor=new THREE.LineBasicMaterial({color:0xc9a961,transparent:true,opacity:.15,depthWrite:false});
+  const major=new THREE.LineBasicMaterial({color:0xcfbb91,transparent:true,opacity:.33,depthWrite:false});
+  for(const [level,positions] of pointsPerLevel){
+    if(!positions.length)continue;
+    const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const line=new THREE.LineSegments(g,level%10===0?major:minor);
+    line.name=`Design contour ${level} ft`;
+    contoursGrp.add(line);
+  }
+}
+ditchGrp.add(contoursGrp);
+
+/* Tank surface keeps the supplied outline and samples design grade. */
+const tankGrp=new THREE.Group();
+tankGrp.name='Tank-pad surface';
+if(DATA.tank_pad.length>3){
+  const top=new THREE.Mesh(
+    sampledPolygon(DATA.tank_pad,3,(x,z)=>(gridElev(x,z).dz-ZBASE)*VSCALE+.23),
+    new THREE.MeshStandardMaterial({color:0xb4afa1,roughness:1,map:concreteTexture,bumpMap:concreteTexture,bumpScale:.04,side:THREE.DoubleSide,transparent:true,opacity:0})
+  );
+  top.name='Grid-sampled tank pad';
+  top.castShadow=top.receiveShadow=true;
+  tankGrp.add(top);
+}
+tankGrp.visible=false;
+scene.add(tankGrp);
+
+fitCam();
+
+/*__PHASE_ENGINE__*/
+
+/* Visual-only UI and navigation enhancements. */
+for(const [i,b] of [...document.querySelectorAll('#phasebtns button')].entries()){
+  b.textContent=PH[i].name;
+  b.title=`${PH[i].id} · ${PH[i].name}`;
+  b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false');
+  b.type='button';
+}
+const phasePanel=document.querySelector('.panel');
+let currentVisualTitle=document.getElementById('ph-name').textContent;
+const visualNameObstacle=new MutationObserver(()=>{
+  const newName=document.getElementById('ph-name').textContent;
+  if(newName!==currentVisualTitle){
+    currentVisualTitle=newName;
+    phasePanel.classList.remove('phase-changed');
+    void phasePanel.offsetWidth;
+    phasePanel.classList.add('phase-changed');
+  }
+  for(const b of document.querySelectorAll('#phasebtns button'))b.setAttribute('aria-pressed',b.classList.contains('on')?'true':'false');
+  track.setAttribute('aria-valuenow',Math.round(phaseT*100));
+  track.setAttribute('aria-valuetext',`${PH[phaseIdx].name}, ${Math.round(phaseT*100)} percent`);
+});
+visualNameObstacle.observe(document.getElementById('ph-name'),{childList:true});
+track.addEventListener('keydown',e=>{
+  let target=phaseT;
+  switch(e.key){case 'ArrowLeft':case 'ArrowDown':target-=.05;break;case 'ArrowRight':case 'ArrowUp':target+=.05;break;case 'Home':target=0;break;case 'End':target=1;break;default:return;}
+  e.preventDefault();gotoPhase(phaseIdx,clamp(target,0,1));
+});
+
+let interacted=false;
+function stopIdle(){
+  interacted=true;
+  controls.autoRotate=false;
+  document.getElementById('idle-state').textContent='Manual view';
+}
+document.addEventListener('pointerdown',stopIdle,{once:true,capture:true,passive:true});
+document.addEventListener('wheel',stopIdle,{once:true,capture:true,passive:true});
+document.addEventListener('keydown',stopIdle,{once:true,capture:true});
+controls.addEventListener('start',stopIdle);
+controls.autoRotate=!reducedMotion&&!interacted;
+document.getElementById('idle-state').textContent=controls.autoRotate?'Idle orbit':'Manual view';
+document.getElementById('fit-view').onclick=()=>{stopIdle();fitCam();};
+
+const footerElement=document.querySelector('footer');
+function syncFooterSpacing(){
+  document.documentElement.style.setProperty('--footer',`${Math.ceil(footerElement.getBoundingClientRect().height)}px`);
+}
+const footerObserver=new ResizeObserver(syncFooterSpacing);
+footerObserver.observe(footerElement);
+syncFooterSpacing();
+
+const S={get phaseIndex(){return phaseIdx;},get phaseT(){return phaseT;},get playing(){return playing;},get morph(){return lastMorph;}};
+window.__viz={terrain,roadGrp,wallGrp,ditchGrp,tankGrp,gotoPhase,applyPhase,S,ST,scene,camera,controls,renderer,fitCam,gridElev,G,contoursGrp,sun,ground,skinVersion:'visual-layer-2'};
+document.getElementById('boot').remove();
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const status=document.getElementById('status');
+  const download=document.getElementById('download');
+  const preview=document.getElementById('preview');
+  const frame=document.getElementById('viewport');
+  let output='',outputName='diamond-heights-visual-upgrade.html',downloadURL=null;
+  let generation=0;
+
+  function update(text,kind=''){
+    status.textContent=text;
+    status.className=kind;
+  }
+
+  function closingBrace(text,start){
+    if(text[start]!=='{')throw Error('Expected an opening brace in the original source.');
+    let depth=0,string=null,escape=false,lineComment=false,blockComment=false;
+    for(let i=start;i<text.length;i++){
+      const ch=text[i],next=text[i+1];
+      if(lineComment){if(ch==='\n')lineComment=false;continue;}
+      if(blockComment){if(ch==='*'&&next==='/'){blockComment=false;i++;}continue;}
+      if(string){
+        if(escape){escape=false;continue;}
+        if(ch==='\\'){escape=true;continue;}
+        if(ch===string)string=null;
+        continue;
+      }
+      if(ch==='/'&&next==='/'){lineComment=true;i++;continue;}
+      if(ch==='/'&&next==='*'){blockComment=true;i++;continue;}
+      if(ch==='"'||ch==="'"||ch==='`'){string=ch;continue;}
+      if(ch==='{')depth++;
+      if(ch==='}'&&--depth===0)return i;
+    }
+    throw Error('The original source ends before a required block closes. Select the intact HTML file instead of a partial paste.');
+  }
+
+  function extractData(source){
+    const match=/\bconst\s+DATA\s*=\s*\{/m.exec(source);
+    if(!match)throw Error('The selected page does not contain a const DATA = {...} declaration.');
+    const brace=match.index+match[0].lastIndexOf('{');
+    const end=closingBrace(source,brace);
+    let semicolon=end+1;
+    while(/\s/.test(source[semicolon]||'')&&semicolon<source.length)semicolon++;
+    if(source[semicolon]!==';')throw Error('The DATA declaration is not terminated as expected.');
+    const text=source.slice(match.index,semicolon+1);
+    const json=source.slice(brace,end+1);
+    const value=JSON.parse(json);
+    return {text,value,end:semicolon+1};
+  }
+
+  function extractGrid(source,afterData){
+    const tail=source.slice(afterData);
+    const binding=/\bconst\s+G\s*=\s*DATA\.eg_grid\s*;/m.exec(tail);
+    if(!binding)throw Error('The original const G = DATA.eg_grid binding was not found.');
+    const match=/\bfunction\s+gridElev\s*\(\s}pxpx/m.exec('');
+    const signature=/\bfunction\s+gridElev\s*\(\s*px\s*,\s*pz\s*\)\s*\{/m.exec(tail);
+    if(!signature)throw Error('The original gridElev(px, pz) helper was not found.');
+    const start=afterData+signature.index;
+    const brace=start+signature[0].lastIndexOf('{');
+    const end=closingBrace(source,brace);
+    const text=source.slice(start,end+1);
+    return {binding:binding[0],text};
+  }
+
+  function extractEngine(source,afterData){
+    const tail=source.slice(afterData);
+    const m=/\blet\s+phaseIdx\s*=/m.exec(tail);
+    if(!m)throw Error('The original six-phase engine was not found.');
+    const start=afterData+m.index;
+    const debug=/\bwindow\.__viz\s*=/m.exec(source.slice(start));
+    if(!debug)throw Error('The original window.__viz debug export was not found.');
+    const text=source.slice(start,start+debug.index);
+    for(const required of ['function applyPhase(','function gotoPhase(','function tick(','requestAnimationFrame(tick)']){
+      if(!text.includes(required))throw Error('This source uses a different phase engine. The builder will not replace unfamiliar machinery.');
+    }
+    return text;
+  }
+
+  function validateData(data){
+    if(!data||!data.eg_grid)throw Error('The original page has no embedded eg_grid.');
+    const g=data.eg_grid;
+    if(!Number.isInteger(g.nx)||g.nx<2||!Number.isInteger(g.nz)||g.nz<2)throw Error('The supplied grid dimensions are invalid.');
+    if(!(g.x1>g.x0)||!(g.z1>g.z0))throw Error('The supplied grid bounds are invalid.');
+    const expected=g.nx*g.nz;
+    for(const key of ['eg','design']){
+      if(!Array.isArray(g[key])||g[key].length!==expected){
+        throw Error(`Audited grid check failed: eg_grid.${key} must contain ${expected.toLocaleString('en-US')} samples; found ${Array.isArray(g[key])?g[key].length.toLocaleString('en-US'):'no array'}. No samples were reconstructed or changed.`);
+      }
+      if(!g[key].every(v=>typeof v==='number'&&Number.isFinite(v)))throw Error(`eg_grid.${key} contains a nonnumeric or nonfinite sample. No geometry was generated.`);
+    }
+    for(const key of ['stations','spine','pavement_ring','wall_daylight','tank_pad','ditch_flowline','ditch_edge']){
+      if(!Array.isArray(data[key]))throw Error(`The original DATA.${key} array is missing.`);
+    }
+    if(data.pavement_ring.length<4||data.spine.length<2)throw Error('The pavement outline or centerline is incomplete.');
+    if(!Array.isArray(data.phases)||data.phases.length!==6)throw Error('Expected exactly six construction phases.');
+    return expected;
+  }
+
+  function replaceToken(string,token,replacement){
+    const i=string.indexOf(token);
+    if(i<0||string.indexOf(token,i+token.length)>=0)throw Error('A builder template marker is missing or duplicated.');
+    return string.slice(0,i)+replacement+string.slice(i+token.length);
+  }
+
+  async function digest(text){
+    if(!crypto.subtle)return null;
+    const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+    return [...new Uint8Array(h)].map(v=>v.toString(16).padStart(2,'0')).join('');
+  }
+
+  function compile(source){
+    const data=extractData(source);
+    const samples=validateData(data.value);
+    const grid=extractGrid(source,data.end);
+    const engine=extractEngine(source,data.end);
+    if(/<\/script/i.test(data.text+grid.text+engine))throw Error('Unexpected script-block terminator found inside the extracted source.');
+    let runtime=document.getElementById('visual-runtime').textContent;
+    /* Normalize template-only placeholders before embedding audited blocks. */
+    runtime=runtime.replace('minZ)Math.min(minZ,p[1]);','minZ=Math.min(minZ,p[1]);');
+    runtime=runtime.replace('sun.position.copy(siteCenter).addMappedVector;','');
+    runtime=runtime.replaceAll('left first','leftFirst');
+    runtime=replaceToken(runtime,'/*__AUDITED_DATA__*/',data.text);
+    runtime=replaceToken(runtime,'/*__G_BINDING__*/',grid.binding);
+    runtime=replaceToken(runtime,'/*__GRID_HELPER__*/',grid.text);
+    runtime=replaceToken(runtime,'/*__PHASE_ENGINE__*/',engine);
+
+    const css=document.getElementById('visual-style').textContent
+      .replace('rgba(fff,fff,fff,.03)','rgba(255,255,255,.03)')
+      .replace('display:flot;float:none;','')
+      .replace('legend-spacing:.2px;','letter-spacing:.2px;');
+    const markup=document.getElementById('visual-markup').textContent;
+    const open='<scr'+'ipt';
+    const close='</scr'+'ipt>';
+    const imports='{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}';
+    const diagnostics=`
+window.__errs = [];
+function presentError(message) {
+  window.__errs.push(message);
+  const p = document.getElementById('boot');
+  if (p) {
+    p.classList.add('failed');
+    p.textContent = 'The presentation could not start: ' + message;
+  }
+}
+window.addEventListener('error', e => presentError(String(e.message) + ' @ line ' + e.lineno));
+window.addEventListener('unhandledrejection', e => presentError(String(e.reason)));
+`;
+    const generated=`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IVR · Diamond Heights — Earthwork Visualizer (Design Model)</title>
+<style>${css}</style>
+${open} type="importmap">${imports}${close}
+</head>
+<body>
+${markup}
+${open}>${diagnostics}${close}
+${open} type="module">
+${runtime}
+${close}
+</body>
+</html>`;
+
+    const verifyData=extractData(generated);
+    const verifyGrid=extractGrid(generated,verifyData.end);
+    const verifyEngine=extractEngine(generated,verifyData.end);
+    if(data.text!==verifyData.text)throw Error('DATA verbatim comparison failed; export cancelled.');
+    if(grid.text!==verifyGrid.text||grid.binding!==verifyGrid.binding)throw Error('Grid helper verbatim comparison failed; export cancelled.');
+    /* The visual postlude follows the original engine, so compare its exact prefix. */
+    if(!verifyEngine.startsWith(engine))throw Error('Phase-engine verbatim comparison failed; export cancelled.');
+    const enc=new TextEncoder(),a=enc.encode(data.text),b=enc.encode(verifyData.text);
+    if(a.length!==b.length||a.some((v,i)=>v!==b[i]))throw Error('DATA UTF-8 byte comparison failed; export cancelled.');
+
+    return {html:generated,data:data.text,bytes:a.length,samples};
+  }
+
+  document.getElementById('source').addEventListener('change',async e=>{
+    const file=e.target.files[0];
+    const ticket=++generation;
+    output='';
+    download.disabled=true;
+    preview.disabled=true;
+    frame.hidden=true;
+    frame.removeAttribute('srcdoc');
+    if(!file){update('Waiting for the original single-file page.');return;}
+    update('Reading and checking the original audited source…');
+    try{
+      const bytes=await file.arrayBuffer();
+      if(ticket!==generation)return;
+      const source=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+      await new Promise(resolve=>setTimeout(resolve,30));
+      const result=compile(source);
+      const hash=await digest(result.data);
+      if(ticket!==generation)return;
+      output=result.html;
+      outputName=file.name.replace(/\.html?$/i,'')+'-visual-upgrade.html';
+      download.disabled=false;
+      preview.disabled=false;
+      update(
+        'Ready. DATA and gridElev() passed verbatim UTF-8 comparisons.\n'+
+        'The original phase engine is retained; audited stamps are not recomputed.\n'+
+        `DATA: ${result.bytes.toLocaleString('en-US')} bytes · ${result.samples.toLocaleString('en-US')} samples per surface.\n`+
+        (hash?`DATA SHA-256: ${hash}\n._________.`:'')+
+        'Download to open the complete upgraded page.',
+        'ok'
+      );
+      status.textContent=status.textContent.replace('._________.','');
+    }catch(error){
+      if(ticket!==generation)return;
+      update(error instanceof Error?error.message:String(error),'error');
+    }
+  });
+
+  download.addEventListener('click',()=>{
+    if(!output)return;
+    if(downloadURL)URL.revokeObjectURL(downloadURL);
+    downloadURL=URL.createObjectURL(new Blob([output],{type:'text/html;charset=utf-8'}));
+    const a=document.createElement('a');
+    a.href=downloadURL;
+    a.download=outputName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  });
+
+  preview.addEventListener('click',()=>{
+    if(!output)return;
+    frame.hidden=false;
+    frame.srcdoc=output;
+    frame.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
+    preview.textContent='Reload preview';
+  });
+
+  addEventListener('beforeunload',()=>{if(downloadURL)URL.revokeObjectURL(downloadURL);});
+})();
+</script>
+</body>
+</html>

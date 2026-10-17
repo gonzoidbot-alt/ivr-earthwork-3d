@@ -142823,6 +142823,24 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0d12);
 scene.fog = new THREE.Fog(0x0b0d12, 2200, 4800);
 
+// ---------- atmosphere: gradient sky dome + ground disc ----------
+const skyGeo = new THREE.SphereGeometry(9000, 32, 15);
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  uniforms: { topColor: {value: new THREE.Color(0x1a2436)}, midColor: {value: new THREE.Color(0x2c3a4f)}, botColor: {value: new THREE.Color(0x0b0d12)} },
+  vertexShader: `varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `varying vec3 vPos; uniform vec3 topColor; uniform vec3 midColor; uniform vec3 botColor;
+    void main(){ float h = normalize(vPos).y; vec3 c = h > 0.12 ? mix(midColor, topColor, smoothstep(0.12, 0.7, h)) : mix(botColor, midColor, smoothstep(-0.2, 0.12, h)); gl_FragColor = vec4(c, 1.0); }`
+});
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+const groundDisc = new THREE.Mesh(
+  new THREE.CircleGeometry(6500, 64),
+  new THREE.MeshStandardMaterial({color:0x2e3524, roughness:1}));
+groundDisc.rotation.x = -Math.PI/2;
+groundDisc.position.set(0, (2214-2220)*2.2 - 1.5, 0);
+groundDisc.receiveShadow = true;
+scene.add(groundDisc);
+
 // ---------- data prep ----------
 const ST = DATA.stations;                      // {s,eg,fg,x,y} — design centerline, real plan coords
 const N = ST.length;
