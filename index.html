@@ -142821,13 +142821,13 @@ const PH = DATA.phases;
 const VSCALE = 2.2, ZBASE = 2220;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0d12);
-scene.fog = new THREE.Fog(0x0b0d12, 2200, 4800);
+scene.fog = new THREE.Fog(0xbcc9d6, 2400, 6000);
 
 // ---------- atmosphere: gradient sky dome + ground disc ----------
 const skyGeo = new THREE.SphereGeometry(9000, 32, 15);
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
-  uniforms: { topColor: {value: new THREE.Color(0x1a2436)}, midColor: {value: new THREE.Color(0x2c3a4f)}, botColor: {value: new THREE.Color(0x0b0d12)} },
+  uniforms: { topColor: {value: new THREE.Color(0x51749e)}, midColor: {value: new THREE.Color(0x9db8cf)}, botColor: {value: new THREE.Color(0xd8cdb4)} },
   vertexShader: `varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
   fragmentShader: `varying vec3 vPos; uniform vec3 topColor; uniform vec3 midColor; uniform vec3 botColor;
     void main(){ float h = normalize(vPos).y; vec3 c = h > 0.12 ? mix(midColor, topColor, smoothstep(0.12, 0.7, h)) : mix(botColor, midColor, smoothstep(-0.2, 0.12, h)); gl_FragColor = vec4(c, 1.0); }`
@@ -142835,9 +142835,9 @@ const skyMat = new THREE.ShaderMaterial({
 scene.add(new THREE.Mesh(skyGeo, skyMat));
 const groundDisc = new THREE.Mesh(
   new THREE.CircleGeometry(6500, 64),
-  new THREE.MeshStandardMaterial({color:0x2e3524, roughness:1}));
+  new THREE.MeshStandardMaterial({color:0x54603f, roughness:1}));
 groundDisc.rotation.x = -Math.PI/2;
-groundDisc.position.set(0, (2214-2220)*2.2 - 1.5, 0);
+groundDisc.position.set(0, (2214-2220)*2.2 - 6.0, 0);
 groundDisc.receiveShadow = true;
 scene.add(groundDisc);
 
@@ -142935,8 +142935,8 @@ function fitCam(){
   controls.update();
 }
 fitCam();
-scene.add(new THREE.HemisphereLight(0xa8c0e0, 0x2a2016, 1.15));
-const sun = new THREE.DirectionalLight(0xffe8c8, 2.3);
+scene.add(new THREE.HemisphereLight(0xbcd0ea, 0x3a3226, 1.5));
+const sun = new THREE.DirectionalLight(0xffe4c0, 3.0);
 sun.position.set(-600, 900, 500); sun.castShadow = true;
 sun.shadow.camera.left=-1600; sun.shadow.camera.right=1600; sun.shadow.camera.top=1600; sun.shadow.camera.bottom=-1600;
 sun.shadow.camera.far = 5000; sun.shadow.mapSize.set(2048,2048);
@@ -142973,11 +142973,11 @@ function placeTerrain(morph){
       const e0 = G.eg[iy*G.nx + ix], d0 = G.design[iy*G.nx + ix];
       const y = (e0*(1-morph) + d0*morph - ZBASE)*VSCALE;
       p.setXYZ(k, WX(dxf), y, -(dyf - cz));
-      const g = 0.42 + 0.08*Math.sin(dxf*0.01)*Math.cos(dyf*0.013);
+      const g = 0.30 + 0.06*Math.sin(dxf*0.01)*Math.cos(dyf*0.013);
       const roadT = (d0 !== e0) ? morph : 0;
-      colors[k*3]   = 0.43*(1-roadT*0.35) + roadT*0.10;
-      colors[k*3+1] = g  *(1-roadT*0.5)  + roadT*0.16;
-      colors[k*3+2] = 0.28*(1-roadT*0.3) + roadT*0.13;
+      colors[k*3]   = 0.34*(1-roadT*0.4) + roadT*0.16;
+      colors[k*3+1] = g  *(1-roadT*0.45) + roadT*0.17;
+      colors[k*3+2] = 0.20*(1-roadT*0.4) + roadT*0.17;
     }
   }
   terrainGeo.attributes.color.needsUpdate = true;
@@ -142989,6 +142989,31 @@ placeTerrain(0); initPass = false;
 const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:.92}));
 terrain.receiveShadow = true;
 scene.add(terrain);
+// ---- skirt: close the mesh edge down to the ground plane (kills the floating-slab look) ----
+{
+  const p = terrainGeo.attributes.position;
+  const segW = G.nx-1, segH = G.nz-1;
+  const idx = (ix, iz) => iz*(G.nx) + ix;   // vertex order matches placeTerrain loops
+  const floorY = (2214-2220)*2.2 - 5.5;
+  const skirtPos = [];
+  const skirtCol = [];
+  const earthDark = new THREE.Color(0x3a3226);
+  function addQuad(a, b){
+    const ay = p.getY(a), by = p.getY(b);
+    // quad: aTop, bTop, bFloor, aFloor
+    skirtPos.push(p.getX(a), ay, p.getZ(a),  p.getX(b), by, p.getZ(b),  p.getX(b), floorY, p.getZ(b));
+    skirtPos.push(p.getX(b), by, p.getZ(b),  p.getX(a), floorY, p.getZ(a),  p.getX(a), ay, p.getZ(a));
+    for (let q=0;q<6;q++) skirtCol.push(0.23, 0.20, 0.15);
+  }
+  for (let ix=0; ix<segW; ix++){ addQuad(idx(ix,0), idx(ix+1,0)); addQuad(idx(ix,segH), idx(ix+1,segH)); }
+  for (let iz=0; iz<segH; iz++){ addQuad(idx(0,iz), idx(0,iz+1)); addQuad(idx(segW,iz), idx(segW,iz+1)); }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(skirtPos, 3));
+  sg.setAttribute('color', new THREE.Float32BufferAttribute(skirtCol, 3));
+  sg.computeVertexNormals();
+  const skirt = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({vertexColors:true, side:THREE.DoubleSide, roughness:1}));
+  scene.add(skirt);
+}
 
 // ---------- design road surface (pavement ring) ----------
 const roadGrp = new THREE.Group();
@@ -143002,7 +143027,7 @@ const roadGrp = new THREE.Group();
     const wx = pos.getX(i)+cx, wzData = -pos.getY(i)+cz;
     const g0 = gridElev(wx, wzData);
     pos.setZ(i, (g0.dz-ZBASE)*VSCALE + 0.5);
-    cols[i*3]=0.33; cols[i*3+1]=0.34; cols[i*3+2]=0.37;
+    cols[i*3]=0.52; cols[i*3+1]=0.53; cols[i*3+2]=0.56;
   }
   for (let i=0;i<pos.count;i++){
     const ny = pos.getY(i), elv = pos.getZ(i);
